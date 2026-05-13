@@ -1,0 +1,55 @@
+{
+  "name": "dscode",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "version": "0.0.1",
+  "bin": {
+    "dscode": "bundle/dscode.js"
+  },
+  "files": [
+    "bundle/"
+  ],
+  "scripts": {
+    "build": "bun build index.tsx --external react-devtools-core --minify --outfile bundle/dscode.js --target=node && pnpm build:post",
+    "build:post": "bun scripts/post-build.ts",
+    "dev": "bun --watch ./index.tsx"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/hast": "^3.0.4",
+    "@types/react": "19.2.0",
+    "ansi-escapes": "^7.0.0",
+    "chalk": "^5.4.1",
+    "color": "4.2.3",
+    "command-exists": "^1.2.9",
+    "hast": "^1.0.0",
+    "immer": "^10.1.1",
+    "ink": "6.7.0",
+    "ink-big-text": "^2.0.0",
+    "ink-gradient": "^3.0.0",
+    "ink-link": "^4.0.0",
+    "ink-select-input": "^6.0.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "lowlight": "^3.3.0",
+    "react": "19.2.0",
+    "string-width": "^7.2.0",
+    "tar": "^7.5.2",
+    "tsx": "^4.21.0",
+    "type-fest": "^4.41.0",
+    "typescript": "^5.8.3",
+    "yargs": "^17.7.2",
+    "zustand": "^5.0.6",
+    "@ai-sdk/openai-compatible": "1.0.26",
+    "ai": "5.0.87",
+    "diff": "^8.0.2",
+    "glob": "^13.0.0",
+    "gpt-tokenizer": "^3.4.0",
+    "pathe": "^2.0.3",
+    "zod": "3.25.76"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
