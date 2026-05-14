@@ -12,14 +12,14 @@ export default [
   },
   {
     provider: 'openai-compatible',
-    model: 'deepseek-chat',
-    baseURL: 'https://api.deepseek.com/v1',
-    maxTokens: 128_000
+    model: 'deepseek-v4-flash',
+    baseURL: 'https://api.deepseek.com',
+    maxTokens: 1_000_000
   },
   {
     provider: 'openai-compatible',
-    model: 'deepseek-v3-com',
-    baseURL: 'https://zhengyan.sinosig.com/ai/ability/gpt/v2/',
-    maxTokens: 30_000
+    model: 'deepseek-v4-pro',
+    baseURL: 'https://api.deepseek.com',
+    maxTokens: 1_000_000
   },
 ]

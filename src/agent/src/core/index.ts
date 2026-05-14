@@ -5,7 +5,7 @@ import { generateText, LanguageModel, ModelMessage, stepCountIs, ToolSet, TypedT
 import { CHAT_MODEL_ID, provider } from "../utils/model.js";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { ApprovalCategory } from "../utils/constants.js";
-
+import OpenAI from 'openai';
 
 
 
