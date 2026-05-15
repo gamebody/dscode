@@ -1,7 +1,7 @@
 
 
 
-import { generateText, LanguageModel, stepCountIs, ToolSet, TypedToolCall } from "ai";
+import { ToolSet, TypedToolCall } from "ai";
 import { CHAT_MODEL_ID, provider } from "../utils/model.js";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { ApprovalCategory } from "../utils/constants.js";
@@ -28,7 +28,7 @@ type Config = {
 
 
 export default class Core {
-  private model: LanguageModel
+  private modelName: string
   private messages: ModelMessage[]
   private tools: ToolSet
   private toolExecutors: any
@@ -42,14 +42,9 @@ export default class Core {
   constructor(config?: Config | undefined) {
     this.system = config?.system
 
-    const modelProvider = !!config?.model ? createOpenAICompatible({
-      name: 'user-config-openai-compatible',
-      apiKey: config?.model?.apiKey,
-      baseURL: config?.model?.baseURL,
-    })(config?.model?.name) : provider(CHAT_MODEL_ID)
+    const modelName = config?.model?.name ?? CHAT_MODEL_ID
 
-
-    this.model = modelProvider
+    this.modelName = modelName
     this.messages = config?.messages || []
     this.tools = {}
 
@@ -141,50 +136,90 @@ export default class Core {
 
   async next() {
     const systemMessage = this.system || ''
-    const completion = await this.client.chat.completions.create({
-      model: 'deepseek-v4-flash',
-      messages: [
-        { role: 'system', content: systemMessage },
-        ...this.messages
-      ],
-      tools: [
-        ...openaiTools
-      ],
-    }, {
-      body: {
-        thinking: { type: "disabled" },
-        model: 'deepseek-v4-flash',
-        messages: [
-          { role: 'system', content: systemMessage },
-          ...this.messages
-        ],
-        tools: [
-          ...openaiTools
-        ],
-      },
-    });
 
-    if (completion.choices) {
-      const choice = completion.choices[0]
+    const requestMessages = [
+      { role: 'system' as const, content: systemMessage },
+      ...this.messages,
+    ]
 
-      if (choice?.finish_reason === 'stop') {
+    let completion: OpenAI.Chat.Completions.ChatCompletion
+
+    try {
+      completion = await this.client.chat.completions.create(
+        {
+          model: this.modelName,
+          messages: requestMessages,
+          tools: openaiTools,
+        },
+        {
+
+          body: {
+            model: this.modelName,
+            messages: requestMessages,
+            tools: openaiTools,
+          },
+        },
+      )
+    } catch (error) {
+      throw new Error(
+        `Core.next() API call failed: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      )
+    }
+
+    const choice = completion.choices?.[0]
+    if (!choice) {
+      throw new Error('Core.next(): no choices returned from API')
+    }
+
+    const assistantMessage = choice.message
+
+    switch (choice.finish_reason) {
+      case 'stop': {
         return {
           actor: 'user' as const,
           result: {
-            text: choice.message.content,
+            text: assistantMessage.content,
             response: completion,
-            choice: choice
-          }
+            choice,
+          },
         }
-      } else if (choice?.finish_reason === 'tool_calls') {
+      }
+
+      case 'tool_calls':
+      case 'function_call': {
         return {
           actor: 'agent' as const,
           result: {
-            toolCalls: choice.message.tool_calls,
+            toolCalls: assistantMessage.tool_calls,
             response: completion,
-            choice: choice
-          }
+            choice,
+          },
         }
+      }
+
+      case 'length': {
+        return {
+          actor: 'user' as const,
+          result: {
+            text: assistantMessage.content,
+            response: completion,
+            choice,
+            truncated: true, // 标记为被截断
+          },
+        }
+      }
+
+      case 'content_filter': {
+        throw new Error(
+          `Core.next(): content filtered by API. Reason: ${JSON.stringify(assistantMessage)}`,
+        )
+      }
+
+      default: {
+        throw new Error(
+          `Core.next(): unexpected finish_reason "${choice.finish_reason}"`,
+        )
       }
     }
   }
