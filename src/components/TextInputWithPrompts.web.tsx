@@ -41,6 +41,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
   const setPending = useStoreContext(s => s.bar.setPending)
   
+  const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
   const setStatusText = useStoreContext(s => s.bar.setStatusText)
   const setSessionId = useStoreContext(s => s.bar.setSessionId)
   const barReset = useStoreContext(s => s.bar.reset)
@@ -71,6 +72,13 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
       }
     }
   }, [])
+
+  // 思考模式变化时，同步到已有 agent（不重建 agent）
+  useEffect(() => {
+    if (currentAgent) {
+      currentAgent.setThinkingMode(thinkingMode)
+    }
+  }, [thinkingMode, currentAgent])
 
   // ESC 按键监听，用于取消当前操作
   useInput((input, key) => {

@@ -20,6 +20,8 @@ type State = {
   exitConfirmState: 'idle' | 'confirming' | 'exiting'
   /** StatusBar 是否可见 */
   isStatusBarVisible: boolean
+  /** 思考模式: off | high | max */
+  thinkingMode: 'off' | 'high' | 'max'
 }
 
 type Action = {
@@ -34,6 +36,10 @@ type Action = {
   setExitConfirmState: (state: 'idle' | 'confirming' | 'exiting') => void
   /** 设置 StatusBar 可见性 */
   setIsStatusBarVisible: (visible: boolean) => void
+  /** 设置思考模式 */
+  setThinkingMode: (mode: 'off' | 'high' | 'max') => void
+  /** 循环切换思考模式: off -> high -> max -> off */
+  cycleThinkingMode: () => void
   reset: () => void
 }
 
@@ -52,6 +58,7 @@ const initialValues: State = {
   sessionId: '',
   exitConfirmState: 'idle',
   isStatusBarVisible: true,
+  thinkingMode: 'max',
 }
 
 
@@ -126,11 +133,29 @@ export const stateCreator: StateCreator<
         })
       })
     },
+    setThinkingMode(mode) {
+      set((state: Store) => {
+        return produce(state, (draft) => {
+          draft.bar.thinkingMode = mode
+        })
+      })
+    },
+    cycleThinkingMode() {
+      set((state: Store) => {
+        return produce(state, (draft) => {
+          const current = draft.bar.thinkingMode
+          const next = current === 'off' ? 'high' : current === 'high' ? 'max' : 'off'
+          draft.bar.thinkingMode = next
+        })
+      })
+    },
     reset: () => set((state: Store) => {
+      const currentThinkingMode = state.bar.thinkingMode
       return ({
         bar: {
           ...state.bar,
           ...initialValues,
+          thinkingMode: currentThinkingMode, // 用户偏好，不随会话重置
         },
       })
     }),

@@ -48,6 +48,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
   const setPending = useStoreContext(s => s.bar.setPending)
   
+  const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
   const setStatusText = useStoreContext(s => s.bar.setStatusText)
   const setSessionId = useStoreContext(s => s.bar.setSessionId)
   const barReset = useStoreContext(s => s.bar.reset)
@@ -81,7 +82,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         name: modelConfig.model,
         apiKey: modelConfig.apiKey,
         baseURL: modelConfig.baseURL
-      }, abortControllerRef.current.signal)
+      }, abortControllerRef.current.signal, thinkingMode)
 
       agent.setContext<CodeAgentContext>({
         cwd: base.cwd,
@@ -91,6 +92,13 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
       setAgent(agent)
     }
   }, [modelConfig])
+
+  // 思考模式变化时，同步到已有 agent（不重建 agent）
+  useEffect(() => {
+    if (currentAgent) {
+      currentAgent.setThinkingMode(thinkingMode)
+    }
+  }, [thinkingMode, currentAgent])
 
 
   function useDefaultModel() {

@@ -76,6 +76,8 @@ type Config = {
   setContextCallback?: (context: any) => void
   model?: ModelConfig
   abortSignal?: AbortSignal
+  /** 思考模式: off 关闭 | high 启用 | max 最大 */
+  thinkingMode?: 'off' | 'high' | 'max'
 }
 
 
@@ -88,6 +90,7 @@ export default class Core {
   private context?: any
   private setContextCallback?: (context: any) => void
   private abortSignal?: AbortSignal
+  private thinkingMode: 'off' | 'high' | 'max'
   private sessionId: string
   private client: OpenAI
 
@@ -104,6 +107,7 @@ export default class Core {
     this.context = {}
     this.setContextCallback = config?.setContextCallback
     this.abortSignal = config?.abortSignal
+    this.thinkingMode = config?.thinkingMode ?? 'max'
 
     this.sessionId = this.createSessionId()
 
@@ -152,6 +156,22 @@ export default class Core {
     this.abortSignal = abortSignal
   }
 
+  setThinkingMode(mode: 'off' | 'high' | 'max') {
+    this.thinkingMode = mode
+  }
+
+  /** 根据 thinkingMode 构建 API 请求的思考强度参数 */
+  private buildThinkingParam(): Record<string, any> | undefined {
+    switch (this.thinkingMode) {
+      case 'off':
+        return { thinking: { type: 'disabled' } }
+      case 'high':
+        return { reasoning_effort: 'high' }
+      case 'max':
+        return { reasoning_effort: 'max' }
+    }
+  }
+
   registerTool(toolName: string, tool: any) {
     this.tools[toolName] = tool
   }
@@ -197,18 +217,20 @@ export default class Core {
     let completion: OpenAI.Chat.Completions.ChatCompletion
 
     try {
+      const thinkingParam = this.buildThinkingParam()
       completion = await this.client.chat.completions.create(
         {
           model: this.modelName,
           messages: requestMessages,
           tools: openaiTools,
+          ...(thinkingParam ?? {}),
         },
         {
-
           body: {
             model: this.modelName,
             messages: requestMessages,
             tools: openaiTools,
+            ...(thinkingParam ?? {}),
           },
         },
       )
@@ -307,6 +329,7 @@ export default class Core {
     let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
 
     try {
+      const thinkingParam = this.buildThinkingParam()
       stream = await this.client.chat.completions.create(
         {
           model: this.modelName,
@@ -314,9 +337,18 @@ export default class Core {
           tools: openaiTools,
           stream: true,
           stream_options: { include_usage: true },
+          ...(thinkingParam ?? {}),
         },
         {
           signal: this.abortSignal,
+          body: {
+            model: this.modelName,
+            messages: requestMessages,
+            tools: openaiTools,
+            stream: true,
+            stream_options: { include_usage: true },
+            ...(thinkingParam ?? {}),
+          },
         },
       )
     } catch (error) {

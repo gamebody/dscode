@@ -24,11 +24,12 @@ export interface CodeAgentContext {
   backgroundTasks?: Record<string, BackgroundTask>
 }
 
-export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal) {
+export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal, thinkingMode?: 'off' | 'high' | 'max') {
     
   const agent = new Core({
     model: model,
     abortSignal: abortSignal,
+    thinkingMode: thinkingMode,
     setContextCallback(context: CodeAgentContext) {
 
       agent.setSystem(generateSystemPrompt({

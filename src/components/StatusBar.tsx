@@ -5,7 +5,7 @@
 
 
 import React, { memo, useEffect } from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import { useStoreContext } from "../store/index";
 import Spinner from "ink-spinner";
 import { Colors } from "../utils/colors";
@@ -57,10 +57,15 @@ const StatusBar: React.FC<StatusBarProps> = () => {
   const isStatusBarVisible = useStoreContext(s => s.bar.isStatusBarVisible)
 
   const agent = useStoreContext(s => s.agent)
+  const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
+  const cycleThinkingMode = useStoreContext(s => s.bar.cycleThinkingMode)
 
-
-
-
+  // Tab 键切换思考模式: off -> high -> max -> off
+  useInput((_input, key) => {
+    if (key.tab) {
+      cycleThinkingMode()
+    }
+  })
 
   if (!isStatusBarVisible) {
     return null;
@@ -80,7 +85,7 @@ const StatusBar: React.FC<StatusBarProps> = () => {
           }
         </Box>
         <Box flexDirection='row' flexWrap='wrap'>
-          <Text color={Colors.AccentGreen}>⇄ Code Agent | </Text>
+          <Text color={thinkingMode === 'max' ? Colors.AccentGreen : thinkingMode === 'high' ? Colors.AccentYellow : Colors.Comment}>⇄ {thinkingMode} | </Text>
           <Text color={Colors.Comment}>{modelConfig.model || '输入/model配置模型'} | </Text>
           <Text color={Colors.Comment}>{base.cwd} | </Text>
           <Text color={Colors.Comment}>{(totalUsage/1000).toFixed(1)}K | </Text>
