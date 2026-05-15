@@ -9,6 +9,9 @@ type UIMessage = {
   role: 'assistant',
   content: string
 } | {
+  role: 'thinking',
+  content: string
+} | {
   role: 'tool',
   content: any
 }
@@ -45,6 +48,12 @@ export const useAgent = (agent?: Core) => {
       }
 
       const { actor, result } = output
+
+      // Push reasoning/thinking content to UI if present
+      const reasoningContent = (result as any).reasoningContent as string | undefined
+      if (reasoningContent) {
+        setUIMessage(pre => [...pre, { role: 'thinking', content: reasoningContent }])
+      }
 
       // Usage tracking (OpenAI format: result.response.usage)
       const usage = result.response?.usage

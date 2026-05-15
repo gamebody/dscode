@@ -174,12 +174,16 @@ export default class Core {
 
     const assistantMessage = choice.message
 
+    // Extract reasoning/thinking content (supported by DeepSeek-R1 and other reasoning models)
+    const reasoningContent = (assistantMessage as any).reasoning_content as string | undefined
+
     switch (choice.finish_reason) {
       case 'stop': {
         return {
           actor: 'user' as const,
           result: {
             text: assistantMessage.content,
+            reasoningContent,
             response: completion,
             choice,
           },
@@ -192,6 +196,7 @@ export default class Core {
           actor: 'agent' as const,
           result: {
             toolCalls: assistantMessage.tool_calls,
+            reasoningContent,
             response: completion,
             choice,
           },
@@ -203,6 +208,7 @@ export default class Core {
           actor: 'user' as const,
           result: {
             text: assistantMessage.content,
+            reasoningContent,
             response: completion,
             choice,
             truncated: true, // 标记为被截断

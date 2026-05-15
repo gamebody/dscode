@@ -24,6 +24,9 @@ export type UIMessage = {
 } | {
   role: 'assistant',
   content: string
+} | {
+  role: 'thinking',
+  content: string
 } | Tool
 
 type State = {
@@ -127,6 +130,12 @@ export const stateCreator: StateCreator<
           }
 
           const { actor, result } = output
+
+          // Push reasoning/thinking content to UI if present
+          const reasoningContent = (result as any).reasoningContent as string | undefined
+          if (reasoningContent) {
+            get().agent.pushUIMessage({ role: 'thinking', content: reasoningContent })
+          }
 
           // Usage tracking (OpenAI format: result.response.usage)
           const usage = result.response?.usage

@@ -187,6 +187,25 @@ const TextItem: React.FC<TextItemProps> = ({ role, content }) => {
       {
         role === 'user' ? <UserText text={content} /> :
         role === 'assistant' ? <Text>{content}</Text> :
+        role === 'thinking' ? (
+          <Box
+            borderStyle="round"
+            borderColor={Colors.Gray}
+            flexDirection="column"
+            paddingX={1}
+            paddingY={0}
+            marginY={1}
+          >
+            <Box>
+              <Text color={Colors.AccentYellow} bold>💭 思考过程</Text>
+            </Box>
+            <Box marginTop={0}>
+              <Text color={Colors.Gray} italic>
+                {content}
+              </Text>
+            </Box>
+          </Box>
+        ) :
         role === 'tool' ? renderTool(content) :
         <Text>{JSON.stringify(content)}</Text>
       }
