@@ -3,10 +3,16 @@ import { Box, Text } from "ink";
 import { Tool, UIMessage } from "../../store/agent";
 import UserText from "./UserText";
 import { Colors } from "../../utils/colors";
+import Gradient from "ink-gradient";
+import { MarkdownDisplay } from "../../utils/MarkdownDisplay";
 
 
 
-export type TextItemProps = UIMessage
+export type TextItemProps = UIMessage & {
+  isStreaming?: boolean;
+  terminalWidth?: number;
+  terminalHeight?: number;
+}
 
 
 type ToolDispalyProps = {
@@ -35,7 +41,7 @@ const ToolDispaly = ({ name, input, output }: ToolDispalyProps) => {
   )
 };
 
-const TextItem: React.FC<TextItemProps> = ({ role, content }) => {
+const TextItem: React.FC<TextItemProps> = ({ role, content, isStreaming, terminalWidth, terminalHeight }) => {
 
 
   const renderTool = (tool: Tool['content']) => {
@@ -186,7 +192,7 @@ const TextItem: React.FC<TextItemProps> = ({ role, content }) => {
     <Box flexDirection='column'>
       {
         role === 'user' ? <UserText text={content} /> :
-        role === 'assistant' ? <Text>{content}</Text> :
+        role === 'assistant' ? <MarkdownDisplay availableTerminalHeight={terminalHeight} text={content as string} isPending={!!isStreaming} terminalWidth={terminalWidth ?? 80} /> :
         role === 'thinking' ? (
           <Box
             borderStyle="round"
@@ -197,13 +203,13 @@ const TextItem: React.FC<TextItemProps> = ({ role, content }) => {
             marginY={1}
           >
             <Box>
-              <Text color={Colors.AccentYellow} bold>💭 思考过程</Text>
+              <Gradient name="rainbow">
+                <Text>thinking</Text>
+              </Gradient>
             </Box>
-            <Box marginTop={0}>
-              <Text color={Colors.Gray} italic>
-                {content}
-              </Text>
-            </Box>
+            <MarkdownDisplay
+                availableTerminalHeight={terminalHeight}
+                text={content as string} isPending={!!isStreaming} terminalWidth={terminalWidth ?? 80} />
           </Box>
         ) :
         role === 'tool' ? renderTool(content) :

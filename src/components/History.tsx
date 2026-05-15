@@ -4,6 +4,7 @@ import { useStoreContext } from "../store/index";
 import Gradient from "ink-gradient";
 import Tips from "./Tips";
 import TextItem from "./TextItem/index";
+import { useTerminalSize } from "../utils/useTerminalSize";
 import { oneCoderAsciiLogo } from "./AsciiArt";
 
 
@@ -39,6 +40,8 @@ const History: React.FC<HistoryProps> = () => {
   const staticMessages = streamingMessage
     ? messages.slice(0, -1)
     : messages
+  
+  const { columns: terminalWidth, rows: terminalHeight } = useTerminalSize();
 
   return (
     <Box flexDirection='column'>
@@ -59,7 +62,7 @@ const History: React.FC<HistoryProps> = () => {
           </Box>,
           <Tips key='Tips' />,
           ...staticMessages.map((item, index) => {
-            return <TextItem key={`static-msg-${index}`} {...item} />
+            return <TextItem key={`static-msg-${index}`} {...item} terminalWidth={terminalWidth} />
           })
         ]}
       >
@@ -70,7 +73,12 @@ const History: React.FC<HistoryProps> = () => {
       {
         streamingMessage && (
           <Box>
-            <TextItem {...streamingMessage} />
+            <TextItem
+              {...streamingMessage}
+              isStreaming={true}
+              terminalWidth={terminalWidth}
+              terminalHeight={terminalHeight}
+            />
           </Box>
         )
       }

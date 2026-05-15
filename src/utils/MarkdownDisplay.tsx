@@ -36,7 +36,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
   const tableRowRegex = /^\s*\|(.+)\|\s*$/;
   const tableSeparatorRegex = /^\s*\|?\s*(:?-+:?)\s*(\|\s*(:?-+:?)\s*)+\|?\s*$/;
 
-  const contentBlocks: React.ReactNode[] = [];
+  let contentBlocks: React.ReactNode[] = [];
   let inCodeBlock = false;
   let lastLineEmpty = true;
   let codeBlockContent: string[] = [];

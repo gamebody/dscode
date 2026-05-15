@@ -132,6 +132,7 @@ const TextInput = forwardRef(function TextInput({
 			if (
 				key.upArrow ||
 				key.downArrow ||
+				key.escape ||
 				(key.ctrl && input === 'c') ||
 				key.tab ||
 				(key.shift && key.tab)
