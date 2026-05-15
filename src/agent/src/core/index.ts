@@ -1,12 +1,13 @@
 
 
 
-import { generateText, LanguageModel, ModelMessage, stepCountIs, ToolSet, TypedToolCall } from "ai";
+import { generateText, LanguageModel, stepCountIs, ToolSet, TypedToolCall } from "ai";
 import { CHAT_MODEL_ID, provider } from "../utils/model.js";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { ApprovalCategory } from "../utils/constants.js";
 import OpenAI from 'openai';
-
+import { openaiTools } from "../tools/openai-tools.js";
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 
 export type ModelConfig = {
@@ -14,6 +15,8 @@ export type ModelConfig = {
   apiKey: string
   baseURL: string
 }
+
+export type ModelMessage = ChatCompletionMessageParam
 
 type Config = {
   system?: string,
@@ -34,6 +37,7 @@ export default class Core {
   private setContextCallback?: (context: any) => void
   private abortSignal?: AbortSignal
   private sessionId: string
+  private client: OpenAI
 
   constructor(config?: Config | undefined) {
     this.system = config?.system
@@ -55,6 +59,11 @@ export default class Core {
     this.abortSignal = config?.abortSignal
 
     this.sessionId = this.createSessionId()
+
+    this.client = new OpenAI({
+      apiKey: config?.model?.apiKey,
+      baseURL: config?.model?.baseURL,
+    });
   }
 
 
@@ -131,25 +140,52 @@ export default class Core {
   }
 
   async next() {
-
-    const result = await generateText({
-      model: this.model,
-      system: this.system,
-      messages: this.messages,
-      tools: this.tools,
-      abortSignal: this.abortSignal,
+    const systemMessage = this.system || ''
+    const completion = await this.client.chat.completions.create({
+      model: 'deepseek-v4-flash',
+      messages: [
+        { role: 'system', content: systemMessage },
+        ...this.messages
+      ],
+      tools: [
+        ...openaiTools
+      ],
+    }, {
+      body: {
+        thinking: { type: "disabled" },
+        model: 'deepseek-v4-flash',
+        messages: [
+          { role: 'system', content: systemMessage },
+          ...this.messages
+        ],
+        tools: [
+          ...openaiTools
+        ],
+      },
     });
 
-    if (result.toolCalls.length) {
-      return {
-        actor: 'agent' as const,
-        result
-      }
-    }
+    if (completion.choices) {
+      const choice = completion.choices[0]
 
-    return {
-      actor: 'user' as const,
-      result
+      if (choice?.finish_reason === 'stop') {
+        return {
+          actor: 'user' as const,
+          result: {
+            text: choice.message.content,
+            response: completion,
+            choice: choice
+          }
+        }
+      } else if (choice?.finish_reason === 'tool_calls') {
+        return {
+          actor: 'agent' as const,
+          result: {
+            toolCalls: choice.message.tool_calls,
+            response: completion,
+            choice: choice
+          }
+        }
+      }
     }
   }
 }
