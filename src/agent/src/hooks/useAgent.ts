@@ -41,86 +41,120 @@ export const useAgent = (agent?: Core) => {
     while (true) {
       setLoading(true)
 
-      const output = await agent.next()
-      if (!output) {
+      // ---- streaming loop ----
+      let accumulatedText = ''
+      let accumulatedReasoning = ''
+      let finalToolCalls: any[] | undefined
+      let finishReason: string = ''
+      let streamUsage: any
+
+      for await (const event of agent.stream()) {
+        switch (event.type) {
+          case 'reasoning-delta': {
+            accumulatedReasoning += event.content
+            setUIMessage(pre => {
+              const last = pre[pre.length - 1]
+              if (last?.role === 'thinking') {
+                // Update existing thinking message in place
+                const updated = [...pre]
+                updated[updated.length - 1] = { role: 'thinking', content: accumulatedReasoning }
+                return updated
+              }
+              // First reasoning chunk — push new message
+              return [...pre, { role: 'thinking', content: event.content }]
+            })
+            break
+          }
+          case 'text-delta': {
+            accumulatedText += event.content
+            setUIMessage(pre => {
+              const last = pre[pre.length - 1]
+              if (last?.role === 'assistant') {
+                // Update existing assistant message in place
+                const updated = [...pre]
+                updated[updated.length - 1] = { role: 'assistant', content: accumulatedText }
+                return updated
+              }
+              // First text chunk — push new message
+              return [...pre, { role: 'assistant', content: event.content }]
+            })
+            break
+          }
+          case 'tool-call-delta':
+            // Tool calls are accumulated internally by stream(), used at finish
+            break
+          case 'finish': {
+            finishReason = event.finishReason
+            finalToolCalls = event.toolCalls
+            streamUsage = event.usage
+
+            // If content arrived entirely in finish (no text-delta events), push now
+            if (!accumulatedText && event.content) {
+              accumulatedText = event.content
+              setUIMessage(pre => [...pre, { role: 'assistant', content: event.content! }])
+            }
+            // If reasoning arrived entirely in finish
+            if (!accumulatedReasoning && event.reasoningContent) {
+              setUIMessage(pre => [...pre, { role: 'thinking', content: event.reasoningContent! }])
+            }
+            break
+          }
+        }
+      }
+
+      // ---- track token usage ----
+      if (streamUsage?.total_tokens) {
+        setTotalTokens(pre => pre + streamUsage.total_tokens)
+      }
+
+      // ---- process finish result ----
+      if (finishReason === 'stop' || finishReason === 'length') {
+        // Preserve reasoning_content for DeepSeek reasoning models
+        agent.appendMessage({
+          role: 'assistant',
+          content: accumulatedText,
+          ...(accumulatedReasoning
+            ? { reasoning_content: accumulatedReasoning }
+            : {}),
+        } as any)
         setLoading(false)
         break
       }
 
-      const { actor, result } = output
-
-      // Push reasoning/thinking content to UI if present
-      const reasoningContent = (result as any).reasoningContent as string | undefined
-      if (reasoningContent) {
-        setUIMessage(pre => [...pre, { role: 'thinking', content: reasoningContent }])
-      }
-
-      // Usage tracking (OpenAI format: result.response.usage)
-      const usage = result.response?.usage
-      if (usage?.total_tokens) {
-        setTotalTokens(pre => pre + usage.total_tokens)
-      }
-
-      if (actor === 'user') {
-        const text = result.text || ''
-        // Append assistant message (OpenAI-compatible format)
-        agent.appendMessage({ role: 'assistant' as any, content: text })
-        if (text) {
-          setUIMessage(pre => [...pre, { role: 'assistant', content: text }])
-        }
-        setLoading(false)
-        break
-      }
-
-      if (actor === 'agent') {
-        const choiceMsg = result.choice.message
-        const toolCalls = result.toolCalls
-
-        if (!toolCalls || toolCalls.length === 0) {
-          setLoading(false)
-          break
-        }
-
+      if (finishReason === 'tool_calls' && finalToolCalls && finalToolCalls.length > 0) {
         // Append assistant message with tool_calls (OpenAI format)
         agent.appendMessage({
           role: 'assistant',
-          content: choiceMsg.content,
-          tool_calls: choiceMsg.tool_calls,
+          content: accumulatedText || null,
+          ...(accumulatedReasoning
+            ? { reasoning_content: accumulatedReasoning }
+            : {}),
+          tool_calls: finalToolCalls,
         } as any)
 
-        // Push text content to UI if present
-        const assistantContent: string | null = choiceMsg.content
-        if (assistantContent) {
-          setUIMessage(pre => [...pre, { role: 'assistant', content: assistantContent }])
-        }
-
         // Push loading tool states to UI
-        setUIMessage(pre => [...pre, ...toolCalls.map(tc => {
-          const t = tc as any
-          return {
-            role: 'tool' as const,
-            content: {
-              toolCallId: t.id,
-              toolName: t.function.name,
-              input: (() => { try { return JSON.parse(t.function.arguments) } catch { return {} } })(),
-              state: 'loading' as const,
-              output: null,
-            }
+        setUIMessage(pre => [...pre, ...finalToolCalls!.map(tc => ({
+          role: 'tool' as const,
+          content: {
+            toolCallId: tc.id,
+            toolName: tc.function.name,
+            input: (() => { try { return JSON.parse(tc.function.arguments) } catch { return {} } })(),
+            state: 'loading' as const,
+            output: null,
           }
-        })])
+        }))])
 
-        const toolResultMessages = await Promise.all(toolCalls.map(async (tc) => {
-          const t = tc as any
+        const toolResultMessages = await Promise.all(finalToolCalls!.map(async (tc) => {
           const bridge = {
-            toolCallId: t.id,
-            toolName: t.function.name,
-            input: (() => { try { return JSON.parse(t.function.arguments) } catch { return {} } })(),
+            toolCallId: tc.id,
+            toolName: tc.function.name,
+            input: (() => { try { return JSON.parse(tc.function.arguments) } catch { return {} } })(),
           } as any
 
           const toolResponse = await agent.executeTool(bridge)
 
           setUIMessage(pre => {
-            const index = pre.findIndex(item => item.role === 'tool' && item.content.toolCallId === t.id)
+            const index = pre.findIndex(item => item.role === 'tool' && item.content.toolCallId === tc.id)
             if (index === -1) return pre
 
             const updated = [...pre] as any[]
@@ -138,13 +172,19 @@ export const useAgent = (agent?: Core) => {
           // Tool result in OpenAI format
           return {
             role: 'tool' as any,
-            tool_call_id: t.id,
+            tool_call_id: tc.id,
             content: JSON.stringify(toolResponse.payload),
           }
         }))
 
         agent.appendMessage(toolResultMessages as any)
+        // Continue the loop — model may produce another response after tool results
+        continue
       }
+
+      // No recognised finish — bail out
+      setLoading(false)
+      break
     }
   }
 

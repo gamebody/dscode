@@ -123,68 +123,104 @@ export const stateCreator: StateCreator<
         get().agent.setLoading(true)
 
         try {
-          const output = await agent.next()
-          if (!output) {
+          // ---- streaming loop ----
+          let accumulatedText = ''
+          let accumulatedReasoning = ''
+          let finalToolCalls: any[] | undefined
+          let finishReason: string = ''
+          let streamUsage: any
+
+          // Track message indices for progressive UI updates
+          let thinkingMsgIndex = -1
+          let assistantMsgIndex = -1
+
+          for await (const event of agent.stream()) {
+            switch (event.type) {
+              case 'reasoning-delta': {
+                accumulatedReasoning += event.content
+                if (thinkingMsgIndex === -1) {
+                  thinkingMsgIndex = get().agent.UIMessage.length
+                  get().agent.pushUIMessage({ role: 'thinking', content: event.content })
+                } else {
+                  const msgs = [...get().agent.UIMessage]
+                  msgs[thinkingMsgIndex] = { role: 'thinking', content: accumulatedReasoning }
+                  get().agent.setUIMessage(msgs)
+                }
+                break
+              }
+              case 'text-delta': {
+                accumulatedText += event.content
+                if (assistantMsgIndex === -1) {
+                  assistantMsgIndex = get().agent.UIMessage.length
+                  get().agent.pushUIMessage({ role: 'assistant', content: event.content })
+                } else {
+                  const msgs = [...get().agent.UIMessage]
+                  msgs[assistantMsgIndex] = { role: 'assistant', content: accumulatedText }
+                  get().agent.setUIMessage(msgs)
+                }
+                break
+              }
+              case 'tool-call-delta':
+                // Tool calls are accumulated internally by stream(), used at finish
+                break
+              case 'finish': {
+                finishReason = event.finishReason
+                finalToolCalls = event.toolCalls
+                streamUsage = event.usage
+
+                // If content arrived entirely in finish (no text-delta events), push now
+                if (!accumulatedText && event.content) {
+                  accumulatedText = event.content
+                  get().agent.pushUIMessage({ role: 'assistant', content: event.content })
+                }
+                // If reasoning arrived entirely in finish
+                if (!accumulatedReasoning && event.reasoningContent) {
+                  get().agent.pushUIMessage({ role: 'thinking', content: event.reasoningContent })
+                }
+                break
+              }
+            }
+          }
+
+          // ---- track token usage ----
+          if (streamUsage?.total_tokens) {
+            get().bar.setUsage(streamUsage.total_tokens)
+            get().bar.setTotalUsage(streamUsage.total_tokens + get().bar.totalUsage)
+          }
+
+          // ---- process finish result ----
+          if (finishReason === 'stop' || finishReason === 'length') {
+            // Append assistant message to conversation history.
+            // DeepSeek reasoning models require reasoning_content to be
+            // preserved in subsequent turns — otherwise 400.
+            agent.appendMessage({
+              role: 'assistant',
+              content: accumulatedText,
+              ...(accumulatedReasoning
+                ? { reasoning_content: accumulatedReasoning }
+                : {}),
+            } as any)
             get().agent.setLoading(false)
             break
           }
 
-          const { actor, result } = output
-
-          // Push reasoning/thinking content to UI if present
-          const reasoningContent = (result as any).reasoningContent as string | undefined
-          if (reasoningContent) {
-            get().agent.pushUIMessage({ role: 'thinking', content: reasoningContent })
-          }
-
-          // Usage tracking (OpenAI format: result.response.usage)
-          const usage = result.response?.usage
-          if (usage?.total_tokens) {
-            get().bar.setUsage(usage.total_tokens)
-            get().bar.setTotalUsage(usage.total_tokens + get().bar.totalUsage)
-          }
-
-          if (actor === 'user') {
-            const text = result.text || ''
-            // Append assistant message (OpenAI-compatible format)
-            agent.appendMessage({ role: 'assistant', content: text })
-            if (text) {
-              get().agent.pushUIMessage({ role: 'assistant', content: text })
-            }
-            get().agent.setLoading(false)
-            break
-          }
-
-          if (actor === 'agent') {
-            const choiceMsg = result.choice.message
-            const toolCalls = result.toolCalls
-
-            if (!toolCalls || toolCalls.length === 0) {
-              get().agent.setLoading(false)
-              break
-            }
-
+          if (finishReason === 'tool_calls' && finalToolCalls && finalToolCalls.length > 0) {
             // Append assistant message with tool_calls (OpenAI format)
             agent.appendMessage({
               role: 'assistant',
-              content: choiceMsg.content,
-              tool_calls: choiceMsg.tool_calls,
-            })
-
-            // Push text content to UI if present
-            if (choiceMsg.content) {
-              get().agent.pushUIMessage({ role: 'assistant', content: choiceMsg.content })
-            }
+              content: accumulatedText || null,
+              ...(accumulatedReasoning
+                ? { reasoning_content: accumulatedReasoning }
+                : {}),
+              tool_calls: finalToolCalls,
+            } as any)
 
             let shouldStopLoop = false
             const toolResultMessages: any[] = []
 
-            for (const rawTc of toolCalls) {
-              const tc = rawTc
-              // Bridge: OpenAI tool_call → format that Core methods and approval expect
-              if (tc.type != 'function') {
-                break
-              }
+            for (const tc of finalToolCalls) {
+              if (tc.type !== 'function') continue
+
               const bridge = {
                 toolCallId: tc.id,
                 toolName: tc.function.name,
@@ -255,7 +291,13 @@ export const stateCreator: StateCreator<
             if (toolResultMessages.length > 0) {
               agent.appendMessage(toolResultMessages as any)
             }
+            // Continue the loop — model may produce another response after tool results
+            continue
           }
+
+          // No recognised finish — bail out
+          get().agent.setLoading(false)
+          break
         } catch (error) {
           if (error instanceof Error && error.name === 'AbortError') {
             get().agent.setLoading(false)

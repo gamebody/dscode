@@ -18,6 +18,58 @@ export type ModelConfig = {
 
 export type ModelMessage = ChatCompletionMessageParam
 
+// Streaming event types yielded by Core.stream()
+export type StreamEvent =
+  | {
+      type: 'text-delta'
+      /** The incremental text content from this chunk */
+      content: string
+      /** The complete accumulated text so far */
+      accumulated: string
+    }
+  | {
+      type: 'reasoning-delta'
+      /** The incremental reasoning/thinking content from this chunk */
+      content: string
+      /** The complete accumulated reasoning content so far */
+      accumulated: string
+    }
+  | {
+      type: 'tool-call-delta'
+      /** The index of this tool call (0-based) */
+      index: number
+      /** The tool call id (set on first chunk for this tool call) */
+      id?: string
+      /** The function name (set on first chunk for this tool call) */
+      name?: string
+      /** The incremental JSON arguments fragment */
+      arguments?: string
+    }
+  | {
+      type: 'finish'
+      /** The finish reason: 'stop', 'tool_calls', 'length', 'content_filter' */
+      finishReason: string
+      /** The complete accumulated text content, or null if none */
+      content: string | null
+      /** The complete accumulated reasoning content, if any */
+      reasoningContent?: string
+      /** Fully assembled tool calls if finishReason is 'tool_calls' */
+      toolCalls?: Array<{
+        id: string
+        type: 'function'
+        function: {
+          name: string
+          arguments: string
+        }
+      }>
+      /** Token usage info if available from the stream */
+      usage?: {
+        prompt_tokens: number
+        completion_tokens: number
+        total_tokens: number
+      }
+    }
+
 type Config = {
   system?: string,
   messages?: ModelMessage[]
@@ -226,6 +278,137 @@ export default class Core {
         throw new Error(
           `Core.next(): unexpected finish_reason "${choice.finish_reason}"`,
         )
+      }
+    }
+  }
+
+  /**
+   * Stream responses from the model using server-sent events.
+   * Returns an async generator that yields StreamEvent objects as content arrives.
+   *
+   * Usage:
+   *   for await (const event of core.stream()) {
+   *     switch (event.type) {
+   *       case 'text-delta':       /* render incremental text *​/
+   *       case 'reasoning-delta':  /* render reasoning content *​/
+   *       case 'tool-call-delta':  /* accumulate tool call args *​/
+   *       case 'finish':           /* final result with assembled tool calls & usage *​/
+   *     }
+   *   }
+   */
+  async *stream(): AsyncGenerator<StreamEvent> {
+    const systemMessage = this.system || ''
+
+    const requestMessages = [
+      { role: 'system' as const, content: systemMessage },
+      ...this.messages,
+    ]
+
+    let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
+
+    try {
+      stream = await this.client.chat.completions.create(
+        {
+          model: this.modelName,
+          messages: requestMessages,
+          tools: openaiTools,
+          stream: true,
+          stream_options: { include_usage: true },
+        },
+        {
+          signal: this.abortSignal,
+        },
+      )
+    } catch (error) {
+      throw new Error(
+        `Core.stream() API call failed: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      )
+    }
+
+    let accumulatedContent = ''
+    let accumulatedReasoning = ''
+    const toolCallAccumulator = new Map<
+      number,
+      { id?: string; name?: string; arguments: string }
+    >()
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta
+      const finishReason = chunk.choices?.[0]?.finish_reason
+
+      // ---- text content delta ----
+      if (delta?.content) {
+        accumulatedContent += delta.content
+        yield {
+          type: 'text-delta' as const,
+          content: delta.content,
+          accumulated: accumulatedContent,
+        }
+      }
+
+      // ---- reasoning / thinking content delta (DeepSeek-R1, etc.) ----
+      const reasoningDelta = (delta as any)?.reasoning_content as string | undefined
+      if (reasoningDelta) {
+        accumulatedReasoning += reasoningDelta
+        yield {
+          type: 'reasoning-delta' as const,
+          content: reasoningDelta,
+          accumulated: accumulatedReasoning,
+        }
+      }
+
+      // ---- tool call deltas ----
+      if (delta?.tool_calls) {
+        for (const tc of delta.tool_calls) {
+          const idx = tc.index
+          if (!toolCallAccumulator.has(idx)) {
+            toolCallAccumulator.set(idx, { arguments: '' })
+          }
+          const acc = toolCallAccumulator.get(idx)!
+          if (tc.id) acc.id = tc.id
+          if (tc.function?.name) acc.name = tc.function.name
+          if (tc.function?.arguments) acc.arguments += tc.function.arguments
+
+          yield {
+            type: 'tool-call-delta' as const,
+            index: idx,
+            id: tc.id,
+            name: tc.function?.name,
+            arguments: tc.function?.arguments,
+          }
+        }
+      }
+
+      // ---- finish ----
+      if (finishReason) {
+        if (finishReason === 'content_filter') {
+          throw new Error(
+            `Core.stream(): content filtered by API at finish`,
+          )
+        }
+
+        // Assemble final tool calls from accumulator
+        const finalToolCalls =
+          toolCallAccumulator.size > 0
+            ? Array.from(toolCallAccumulator.entries()).map(([, tc]) => ({
+                id: tc.id!,
+                type: 'function' as const,
+                function: {
+                  name: tc.name!,
+                  arguments: tc.arguments,
+                },
+              }))
+            : undefined
+
+        yield {
+          type: 'finish' as const,
+          finishReason,
+          content: accumulatedContent || null,
+          reasoningContent: accumulatedReasoning || undefined,
+          toolCalls: finalToolCalls,
+          usage: (chunk as any).usage,
+        }
       }
     }
   }

@@ -10,6 +10,7 @@ import type { TodoReadTool, TodoWriteTool } from './src/tools/todo.js';
 import type { BashTool } from './src/tools/bash.js';
 import type { AskUserQuestionTool } from './src/tools/askUserQuestion.js';
 import { ApprovalCategory } from './src/utils/constants.js';
+import type { StreamEvent } from './src/core/index.js';
 
 export {
   Core,
@@ -18,6 +19,7 @@ export {
 };
 export type {
   ModelMessage,
+  StreamEvent,
   CodeAgentContext,
   LsTool,
   ReadTool,

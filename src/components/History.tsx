@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Box, Static, Text } from "ink";
 import { useStoreContext } from "../store/index";
 import Gradient from "ink-gradient";
@@ -15,10 +15,30 @@ type HistoryProps = {
 const History: React.FC<HistoryProps> = () => {
 
   const staticKey = useStoreContext(s => s.history.staticKey)
+  const refreshStaticKey = useStoreContext(s => s.history.refreshStaticKey)
   const version = useStoreContext(s => s.base.version)
   const productName = useStoreContext(s => s.base.productName)
   const messages = useStoreContext(s => s.agent.UIMessage)
+  const loading = useStoreContext(s => s.agent.loading)
 
+  // When streaming finishes (loading: true -> false), refresh staticKey
+  // so the completed message is absorbed into the Static zone.
+  const prevLoading = useRef(loading)
+  useEffect(() => {
+    if (prevLoading.current && !loading) {
+      refreshStaticKey()
+    }
+    prevLoading.current = loading
+  }, [loading, refreshStaticKey])
+
+  // The last message is being streamed when loading is true.
+  // It must render outside <Static> so Ink can re-render it on every frame.
+  const streamingMessage = loading && messages.length > 0
+    ? messages[messages.length - 1]
+    : null
+  const staticMessages = streamingMessage
+    ? messages.slice(0, -1)
+    : messages
 
   return (
     <Box flexDirection='column'>
@@ -38,14 +58,22 @@ const History: React.FC<HistoryProps> = () => {
             </Gradient>
           </Box>,
           <Tips key='Tips' />,
-          ...messages.map((item, index) => {
-            return <TextItem key={index} {...item} />
+          ...staticMessages.map((item, index) => {
+            return <TextItem key={`static-msg-${index}`} {...item} />
           })
-      ]}>
+        ]}
+      >
         {
           (item) => item
         }
       </Static>
+      {
+        streamingMessage && (
+          <Box>
+            <TextItem {...streamingMessage} />
+          </Box>
+        )
+      }
     </Box>
   );
 };
