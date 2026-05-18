@@ -53,6 +53,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const navigateUp = useStoreContext(s => s.messageHistory.navigateUp)
   const navigateDown = useStoreContext(s => s.messageHistory.navigateDown)
   const resetNavigation = useStoreContext(s => s.messageHistory.resetNavigation)
+  const firstMessageRecorded = useRef(false)
   
   const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
   const agentMode = useStoreContext(s => s.bar.agentMode)
@@ -244,7 +245,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
         setSessionApproved(false)
         refreshStaticKey()
-        
+        firstMessageRecorded.current = false
       }
     },
   };
@@ -266,7 +267,10 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                 if (visible) return
                 setVisible(false)
 
-                pushMessage(submitText)
+                if (!firstMessageRecorded.current) {
+                  pushMessage(submitText)
+                  firstMessageRecorded.current = true
+                }
                 resetNavigation()
 
                 // 特殊处理 /liuyun 命令
