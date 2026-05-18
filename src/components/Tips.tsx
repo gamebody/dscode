@@ -5,6 +5,7 @@ import { useStoreContext } from "../store/index";
 
 const tips: string[] = [
   'Shift+Tab 切换 Agent/YOLO 模式',
+  'Agent 模式: 执行前需确认; YOLO 模式: 自动执行',
   '按 Ctrl+C 两次可安全退出程序',
   '输入 @ 触发文件搜索，Tab 或 Enter 选择',
   '按 Tab 循环思考模式: off → high → max',

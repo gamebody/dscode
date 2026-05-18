@@ -208,14 +208,26 @@ export default class Core {
 
   executeTool(toolCall: TypedToolCall<ToolSet>, userInput?: unknown) {
     const executor = this.toolExecutors[toolCall.toolName]
+    if (!executor) {
+      const message = `Tool "${toolCall.toolName}" is not registered. Available tools: ${Object.keys(this.toolExecutors).join(', ') || 'none'}`
+      return {
+        type: "tool-result" as const, 
+        returnDisplay: message,
+        payload: {
+          llmContent: message,
+        },
+      }
+    }
     return executor(toolCall.input, this.context, userInput)
   }
 
   approvalCategory(toolCall: TypedToolCall<ToolSet>) {
-    if (this.toolExecutors[toolCall.toolName].approval) {
-      const approvalCategory = this.toolExecutors[toolCall.toolName].approval.category as ApprovalCategory
-      
-      return approvalCategory
+    const executor = this.toolExecutors[toolCall.toolName]
+    if (!executor) {
+      return 'unknown'
+    }
+    if (executor.approval) {
+      return executor.approval.category as ApprovalCategory
     }
     return 'unknown'
   }
