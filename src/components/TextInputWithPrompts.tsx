@@ -49,6 +49,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const setPending = useStoreContext(s => s.bar.setPending)
   
   const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
+  const agentMode = useStoreContext(s => s.bar.agentMode)
   const setStatusText = useStoreContext(s => s.bar.setStatusText)
   const setSessionId = useStoreContext(s => s.bar.setSessionId)
   const barReset = useStoreContext(s => s.bar.reset)
@@ -214,11 +215,11 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     <Box flexDirection='column'>
       {
         !(isPedning || isUserDecison || showModelSelect) && (
-          <Box flexDirection="row" borderStyle="round" borderLeft={false} borderRight={false} borderColor={Colors.AccentBlue}>
-            <Text color={Colors.AccentGreen}>{'❯'}</Text>
+          <Box flexDirection="row" borderStyle="round" borderLeft={false} borderRight={false} borderColor={agentMode === 'agent' ? Colors.AccentGreen : Colors.AccentYellow}>
+            <Text color={agentMode === 'agent' ? Colors.AccentGreen : Colors.AccentYellow}>{'❯'}</Text>
             <Box width={1} />
             <TextInput
-              color={Colors.AccentGreen}
+              color={agentMode === 'agent' ? Colors.AccentGreen : Colors.AccentYellow}
               ref={inputRef}
               placeholder="Type your command here..."
               highlightPastedText

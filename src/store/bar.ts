@@ -22,6 +22,8 @@ type State = {
   isStatusBarVisible: boolean
   /** 思考模式: off | high | max */
   thinkingMode: 'off' | 'high' | 'max'
+  /** Agent 模式: agent 标准模式 | yolo 自动执行模式 */
+  agentMode: 'agent' | 'yolo'
 }
 
 type Action = {
@@ -40,6 +42,10 @@ type Action = {
   setThinkingMode: (mode: 'off' | 'high' | 'max') => void
   /** 循环切换思考模式: off -> high -> max -> off */
   cycleThinkingMode: () => void
+  /** 设置 Agent 模式 */
+  setAgentMode: (mode: 'agent' | 'yolo') => void
+  /** 切换 Agent 模式: agent <-> yolo */
+  cycleAgentMode: () => void
   reset: () => void
 }
 
@@ -59,6 +65,7 @@ const initialValues: State = {
   exitConfirmState: 'idle',
   isStatusBarVisible: true,
   thinkingMode: 'max',
+  agentMode: 'agent',
 }
 
 
@@ -149,13 +156,29 @@ export const stateCreator: StateCreator<
         })
       })
     },
+    setAgentMode(mode) {
+      set((state: Store) => {
+        return produce(state, (draft) => {
+          draft.bar.agentMode = mode
+        })
+      })
+    },
+    cycleAgentMode() {
+      set((state: Store) => {
+        return produce(state, (draft) => {
+          draft.bar.agentMode = draft.bar.agentMode === 'agent' ? 'yolo' : 'agent'
+        })
+      })
+    },
     reset: () => set((state: Store) => {
       const currentThinkingMode = state.bar.thinkingMode
+      const currentAgentMode = state.bar.agentMode
       return ({
         bar: {
           ...state.bar,
           ...initialValues,
           thinkingMode: currentThinkingMode, // 用户偏好，不随会话重置
+          agentMode: currentAgentMode, // 用户偏好，不随会话重置
         },
       })
     }),

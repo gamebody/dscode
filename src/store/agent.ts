@@ -237,9 +237,12 @@ export const stateCreator: StateCreator<
               }
 
               const approvalCategory = agent.approvalCategory(bridge)
+              const agentMode = get().bar.agentMode
 
               if (approvalCategory === ApprovalCategory.WRITE) {
-                if (!get().agent.sessionApproved) {
+                if (agentMode === 'yolo') {
+                  // YOLO 模式：自动同意
+                } else if (!get().agent.sessionApproved) {
                   const userDecision = await get().approval.requestApproval(bridge)
                   if (userDecision === 'disagree') {
                     shouldStopLoop = true
@@ -250,7 +253,9 @@ export const stateCreator: StateCreator<
               }
 
               if (approvalCategory === ApprovalCategory.COMMAND) {
-                if (!get().agent.sessionApproved) {
+                if (agentMode === 'yolo') {
+                  // YOLO 模式：自动同意
+                } else if (!get().agent.sessionApproved) {
                   const userDecision = await get().approval.requestApproval(bridge)
                   if (userDecision === 'disagree') {
                     shouldStopLoop = true
