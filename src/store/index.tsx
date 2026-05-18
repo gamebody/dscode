@@ -9,7 +9,9 @@ import { Store as agentSlice, stateCreator as agentStateCreator, } from './agent
 import { Store as configSlice, stateCreator as configStateCreator, } from './config'
 import { Store as userConfigSlice, stateCreator as userConfigStateCreator, } from './userConfig'
 import { Store as approvalSlice, stateCreator as approvalStateCreator, } from './approval'
+import { Store as messageHistorySlice, stateCreator as messageHistoryStateCreator, } from './messageHistory'
 import { isCLI } from '../utils/platform'
+import path from 'path'
 
 
 type AppStore = ReturnType<typeof createAppStore>
@@ -34,7 +36,8 @@ export type StateActions =
   agentSlice &
   configSlice &
   userConfigSlice &
-  approvalSlice
+  approvalSlice &
+  messageHistorySlice
   
   
 const StoreContext = createContext<AppStore | null>(null)
@@ -44,6 +47,14 @@ const StoreContext = createContext<AppStore | null>(null)
 export const createAppStore = (base: Base) => {
   const userConfigPath = base.userConfigPath
 
+  let initialMessages: string[] = []
+  try {
+    const fs = require('fs')
+    const historyPath = path.join(base.storageDir, '.message-history.json')
+    const data = JSON.parse(fs.readFileSync(historyPath, 'utf8'))
+    if (Array.isArray(data.messages)) initialMessages = data.messages
+  } catch {}
+
   const partialize = (state: StateActions) => ({
     userConfig: state.userConfig,
     bar: {
@@ -52,13 +63,14 @@ export const createAppStore = (base: Base) => {
     },
   })
 
-  const merge = (persisted: Partial<StateActions>, current: StateActions) => ({
+  const merge = (persisted: any, current: StateActions) => ({
     ...current,
     ...persisted,
     bar: {
       ...current.bar,
       ...(persisted.bar ? { thinkingMode: persisted.bar.thinkingMode, agentMode: persisted.bar.agentMode } : {}),
     },
+    messageHistory: current.messageHistory,
   })
   
   // 创建存储配置的函数
@@ -115,6 +127,7 @@ export const createAppStore = (base: Base) => {
         ...configStateCreator(...a),
         ...userConfigStateCreator(...a),
         ...approvalStateCreator(...a),
+        ...messageHistoryStateCreator(initialMessages)(...a),
       }),
       createStorageConfig()
     )
@@ -139,5 +152,3 @@ export function useStoreContext<T>(selector: (state: StateActions) => T): T {
   if (!store) throw new Error('Missing AppStoreProvider in the tree')
   return useStore(store, selector)
 }
-
-

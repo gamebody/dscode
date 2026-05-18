@@ -47,6 +47,10 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
 
   const setPending = useStoreContext(s => s.bar.setPending)
+  const pushMessage = useStoreContext(s => s.messageHistory.pushMessage)
+  const navigateUp = useStoreContext(s => s.messageHistory.navigateUp)
+  const navigateDown = useStoreContext(s => s.messageHistory.navigateDown)
+  const resetNavigation = useStoreContext(s => s.messageHistory.resetNavigation)
   
   const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
   const agentMode = useStoreContext(s => s.bar.agentMode)
@@ -181,6 +185,25 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         highlightValue.current = null
       }
     }
+
+    // 上下箭头浏览历史
+    if (key.upArrow) {
+      const historyText = navigateUp()
+      if (historyText !== null) {
+        setText(historyText)
+        setVisible(false)
+        inputRef.current?.setCursorOffset(historyText.length)
+      }
+    } else if (key.downArrow) {
+      const historyText = navigateDown()
+      if (historyText !== null) {
+        setText(historyText)
+        setVisible(false)
+        inputRef.current?.setCursorOffset(historyText.length)
+      }
+    } else if (!key.return) {
+      resetNavigation()
+    }
   })
 
   const context = {
@@ -227,6 +250,9 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
               onSubmit={async submitText => {
                 if (visible) return
                 setVisible(false)
+
+                pushMessage(submitText)
+                resetNavigation()
 
                 // 特殊处理 /liuyun 命令
                 if (submitText === '/liuyun') {
