@@ -9,7 +9,29 @@ import { AppStoreProvider, Base } from './src/store/index';
 import os from 'os'
 import path from 'path'
 import { setPlatform } from './src/utils/platform';
+import { writeCrashLog } from './src/logger/index';
 import fs from 'fs'
+
+process.on('uncaughtException', (error) => {
+  writeCrashLog(base.logs, error, 'uncaughtException')
+    .then((logPath) => {
+      console.error(`\n进程异常退出，错误日志: ${logPath}`)
+    })
+    .finally(() => {
+      process.exit(1)
+    })
+})
+
+process.on('unhandledRejection', (reason) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason))
+  writeCrashLog(base.logs, error, 'unhandledRejection')
+    .then((logPath) => {
+      console.error(`\n未处理的 Promise 拒绝，错误日志: ${logPath}`)
+    })
+    .finally(() => {
+      process.exit(1)
+    })
+})
 
 themeManager.setActiveTheme('ANSI')
 

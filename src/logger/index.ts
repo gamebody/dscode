@@ -1,7 +1,8 @@
-import { mkdir, appendFile } from 'node:fs/promises'
+import { mkdir, appendFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import dayjs from 'dayjs'
+import os from 'os'
 
 export interface LogEntry {
   timestamp: string
@@ -58,4 +59,71 @@ export class MessageLogger {
   async logResponse(response: unknown): Promise<void> {
     await this.log({ type: 'response', sessionId: this.sessionId, data: response })
   }
+}
+
+export interface CrashInfo {
+  timestamp: string
+  type: 'uncaughtException' | 'unhandledRejection'
+  error: {
+    name: string
+    message: string
+    stack?: string
+  }
+  process: {
+    pid: number
+    uptime: number
+    memoryUsage: NodeJS.MemoryUsage
+    cwd: string
+    argv: string[]
+    version: string
+  }
+  system: {
+    platform: string
+    arch: string
+    hostname: string
+    username: string
+    homedir: string
+  }
+}
+
+export async function writeCrashLog(
+  logsDir: string,
+  error: Error | null,
+  type: 'uncaughtException' | 'unhandledRejection',
+): Promise<string> {
+  const crashDir = join(logsDir, 'crashes')
+  if (!existsSync(crashDir)) {
+    await mkdir(crashDir, { recursive: true })
+  }
+
+  const now = dayjs()
+  const filePath = join(crashDir, `crash-${now.format('YYYY-MM-DD-HH-mm-ss')}.json`)
+
+  const crashInfo: CrashInfo = {
+    timestamp: now.toISOString(),
+    type,
+    error: {
+      name: error?.name ?? 'UnknownError',
+      message: error?.message ?? 'No error message',
+      stack: error?.stack,
+    },
+    process: {
+      pid: process.pid,
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage(),
+      cwd: process.cwd(),
+      argv: process.argv,
+      version: process.version,
+    },
+    system: {
+      platform: os.platform(),
+      arch: os.arch(),
+      hostname: os.hostname(),
+      username: os.userInfo().username,
+      homedir: os.homedir(),
+    },
+  }
+
+  await writeFile(filePath, JSON.stringify(crashInfo, null, 2), 'utf-8')
+  return filePath
 }
