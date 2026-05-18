@@ -4,18 +4,15 @@
 
 
 
-import React, { memo, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import { useStoreContext } from "../store/index";
-import Spinner from "ink-spinner";
 import { Colors } from "../utils/colors";
 import Thinking from "./Thinking";
 
 export type StatusBarProps = {
 };
 
-
-const SpinnerDot = memo(() => <Spinner type='dots' />)
 
 const Timer = () => {
   const [time, setTime] = React.useState(0)

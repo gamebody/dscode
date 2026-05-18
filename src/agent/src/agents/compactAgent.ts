@@ -2,11 +2,12 @@ import Core from "../core/index.js";
 import { COMPACT_INSTRUCTION, SYSTEM_COMPACT } from "../prompts/system.compact.js";
 
 
-export default function compactAgent() {
+export default function compactAgent(logsDir?: string) {
   
   
   const agent = new Core({
-    system: SYSTEM_COMPACT()
+    system: SYSTEM_COMPACT(),
+    logsDir: logsDir,
   })
 
 

@@ -82,7 +82,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         name: modelConfig.model,
         apiKey: modelConfig.apiKey,
         baseURL: modelConfig.baseURL
-      }, abortControllerRef.current.signal, thinkingMode)
+      }, abortControllerRef.current.signal, thinkingMode, base.logs)
 
       agent.setContext<CodeAgentContext>({
         cwd: base.cwd,
@@ -110,7 +110,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     // 创建新的 abortController
     abortControllerRef.current = new AbortController()
     
-    const agent = codeAgent(undefined, abortControllerRef.current.signal)
+    const agent = codeAgent(undefined, abortControllerRef.current.signal, undefined, base.logs)
     agent.setContext<CodeAgentContext>({
       cwd: base.cwd,
       productName: base.productName,

@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode, useEffect } from "react";
+import React, { ReactElement, ReactNode, useMemo } from "react";
 import { Box, Text } from "ink";
 import { Tool, UIMessage } from "../../store/agent";
 import UserText from "./UserText";
@@ -39,6 +39,43 @@ const ToolDispaly = ({ name, input, output }: ToolDispalyProps) => {
       </Box>
     </Box>
   )
+};
+
+const MAX_VISIBLE_LINES = 3;
+
+const ThinkingBlock: React.FC<{ content: string; isStreaming: boolean; terminalWidth: number; terminalHeight?: number }> = ({ content, isStreaming, terminalWidth, terminalHeight }) => {
+  const lines = useMemo(() => content.split('\n'), [content]);
+  const visibleLines = useMemo(() => lines.slice(-MAX_VISIBLE_LINES), [lines]);
+  const hiddenCount = lines.length - visibleLines.length;
+  const text = hiddenCount > 0 ? visibleLines.join('\n') : content;
+
+  return (
+    <Box
+      borderStyle="round"
+      borderColor={Colors.Gray}
+      flexDirection="column"
+      paddingX={1}
+      paddingY={0}
+      marginY={1}
+    >
+      <Box>
+        <Gradient name="rainbow">
+          <Text>thinking</Text>
+        </Gradient>
+      </Box>
+      {hiddenCount > 0 && (
+        <Text color={Colors.Gray}>
+          ... {hiddenCount} lines collapsed
+        </Text>
+      )}
+      <MarkdownDisplay
+        availableTerminalHeight={terminalHeight}
+        text={text}
+        isPending={isStreaming}
+        terminalWidth={terminalWidth}
+      />
+    </Box>
+  );
 };
 
 const TextItem: React.FC<TextItemProps> = ({ role, content, isStreaming, terminalWidth, terminalHeight }) => {
@@ -193,25 +230,7 @@ const TextItem: React.FC<TextItemProps> = ({ role, content, isStreaming, termina
       {
         role === 'user' ? <UserText text={content} /> :
         role === 'assistant' ? <MarkdownDisplay availableTerminalHeight={terminalHeight} text={content as string} isPending={!!isStreaming} terminalWidth={terminalWidth ?? 80} /> :
-        role === 'thinking' ? (
-          <Box
-            borderStyle="round"
-            borderColor={Colors.Gray}
-            flexDirection="column"
-            paddingX={1}
-            paddingY={0}
-            marginY={1}
-          >
-            <Box>
-              <Gradient name="rainbow">
-                <Text>thinking</Text>
-              </Gradient>
-            </Box>
-            <MarkdownDisplay
-                availableTerminalHeight={terminalHeight}
-                text={content as string} isPending={!!isStreaming} terminalWidth={terminalWidth ?? 80} />
-          </Box>
-        ) :
+        role === 'thinking' ? <ThinkingBlock content={content as string} isStreaming={!!isStreaming} terminalWidth={terminalWidth ?? 80} terminalHeight={terminalHeight} /> :
         role === 'tool' ? renderTool(content) :
         <Text>{JSON.stringify(content)}</Text>
       }

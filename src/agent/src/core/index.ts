@@ -8,6 +8,7 @@ import { ApprovalCategory } from "../utils/constants.js";
 import OpenAI from 'openai';
 import { openaiTools } from "../tools/openai-tools.js";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import { MessageLogger } from "../../../logger/index.js";
 
 
 export type ModelConfig = {
@@ -78,6 +79,8 @@ type Config = {
   abortSignal?: AbortSignal
   /** 思考模式: off 关闭 | high 启用 | max 最大 */
   thinkingMode?: 'off' | 'high' | 'max'
+  /** 日志存储目录 (如 ~/.one-coder/logs)，开启后记录每次对话消息 */
+  logsDir?: string
 }
 
 
@@ -93,6 +96,7 @@ export default class Core {
   private thinkingMode: 'off' | 'high' | 'max'
   private sessionId: string
   private client: OpenAI
+  private logger: MessageLogger | null = null
 
   constructor(config?: Config | undefined) {
     this.system = config?.system
@@ -110,6 +114,10 @@ export default class Core {
     this.thinkingMode = config?.thinkingMode ?? 'max'
 
     this.sessionId = this.createSessionId()
+
+    if (config?.logsDir) {
+      this.logger = new MessageLogger(config.logsDir, this.sessionId)
+    }
 
     this.client = new OpenAI({
       apiKey: config?.model?.apiKey,
@@ -183,9 +191,15 @@ export default class Core {
   appendMessage(message: ModelMessage | ModelMessage[]) {
     if (Array.isArray(message)) {
       this.messages.push(...message)
+      if (this.logger) {
+        for (const msg of message) {
+          this.logger.logMessage(msg)
+        }
+      }
       return
     }
     this.messages.push(message)
+    this.logger?.logMessage(message)
   }
 
   clearMessages() {
