@@ -43,6 +43,23 @@ const StoreContext = createContext<AppStore | null>(null)
 
 export const createAppStore = (base: Base) => {
   const userConfigPath = base.userConfigPath
+
+  const partialize = (state: StateActions) => ({
+    userConfig: state.userConfig,
+    bar: {
+      thinkingMode: state.bar.thinkingMode,
+      agentMode: state.bar.agentMode,
+    },
+  })
+
+  const merge = (persisted: Partial<StateActions>, current: StateActions) => ({
+    ...current,
+    ...persisted,
+    bar: {
+      ...current.bar,
+      ...(persisted.bar ? { thinkingMode: persisted.bar.thinkingMode, agentMode: persisted.bar.agentMode } : {}),
+    },
+  })
   
   // 创建存储配置的函数
   const createStorageConfig = () => {
@@ -70,9 +87,8 @@ export const createAppStore = (base: Base) => {
               } catch {}
             }
           })),
-          partialize: (state: StateActions) => ({
-            userConfig: state.userConfig
-          })
+          partialize,
+          merge,
         }
       } catch (error) {
         console.warn('Failed to load fs module, falling back to localStorage:', error)
@@ -84,9 +100,8 @@ export const createAppStore = (base: Base) => {
     return {
       name: 'one-coder-web-store',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state: StateActions) => ({
-        userConfig: state.userConfig
-      })
+      partialize,
+      merge,
     }
   }
   
