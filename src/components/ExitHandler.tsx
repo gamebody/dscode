@@ -13,7 +13,10 @@ const ExitHandler: React.FC = () => {
   const totalUsage = useStoreContext(s => s.bar.totalUsage);
   const sessionId = useStoreContext(s => s.bar.sessionId);
   const logsDir = useStoreContext(s => s.base.logs);
+  const agentMode = useStoreContext(s => s.bar.agentMode);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const accentColor = agentMode === 'agent' ? Colors.AccentGreen : Colors.AccentYellow
 
   // 清理超时定时器
   const clearExitTimeout = () => {
@@ -89,7 +92,7 @@ const ExitHandler: React.FC = () => {
   // 显示退出确认提示
   if (exitConfirmState === 'confirming') {
     return (
-      <Text color={Colors.AccentYellow}>
+      <Text color={accentColor}>
         再按一次 <Text color={Colors.AccentRed} bold>Ctrl+C</Text> 退出应用程序
       </Text>
     );
@@ -98,9 +101,9 @@ const ExitHandler: React.FC = () => {
   if (exitConfirmState == 'exiting') {
     return (
       <Box flexDirection='column'>
-        <Text color={Colors.AccentYellow}>{summary}</Text>
-        <Text color={Colors.AccentYellow}>使用 {tokenUsage}</Text>
-        <Text color={Colors.AccentYellow}>日志 {logFilePath}</Text>
+        <Text color={accentColor}>{summary}</Text>
+        <Text color={accentColor}>使用 {tokenUsage}</Text>
+        <Text color={accentColor}>日志 {logFilePath}</Text>
       </Box>
     );
   }
