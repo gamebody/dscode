@@ -243,10 +243,15 @@ export const stateCreator: StateCreator<
               }
 
               if (approvalCategory === ApprovalCategory.COMMAND) {
-                const userDecision = await get().approval.requestApproval(bridge)
-                if (userDecision === 'disagree') {
-                  shouldStopLoop = true
-                  break
+                if (!get().agent.sessionApproved) {
+                  const userDecision = await get().approval.requestApproval(bridge)
+                  if (userDecision === 'disagree') {
+                    shouldStopLoop = true
+                    break
+                  }
+                  if (userDecision === 'agree_all_session') {
+                    get().agent.setSessionApproved(true)
+                  }
                 }
               }
 

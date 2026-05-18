@@ -19,6 +19,7 @@ const Approval: FC = () => {
   if (pendingApproval && pendingApproval.toolName == 'bash') {
     options = [
       { label: 'Yes (once)', value: 'agree_once' as ApprovalDecision },
+      { label: 'Yes, allow all bash during this session', value: 'agree_all_session' as ApprovalDecision },
       { label: 'No, and suggest changes (esc)', value: 'disagree' as ApprovalDecision },
     ]
   }
