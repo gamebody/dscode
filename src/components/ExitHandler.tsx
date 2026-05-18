@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { useInput, Text, Box } from 'ink';
 import { useStoreContext } from '../store/index';
 import { Colors } from '../utils/colors';
+import { getDateStr } from '../logger/index';
+import path from 'node:path';
 
 const ExitHandler: React.FC = () => {
   const exitConfirmState = useStoreContext(s => s.bar.exitConfirmState);
@@ -10,7 +12,7 @@ const ExitHandler: React.FC = () => {
   const setStatusText = useStoreContext(s => s.bar.setStatusText);
   const totalUsage = useStoreContext(s => s.bar.totalUsage);
   const sessionId = useStoreContext(s => s.bar.sessionId);
-  
+  const logsDir = useStoreContext(s => s.base.logs);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 清理超时定时器
@@ -42,6 +44,8 @@ const ExitHandler: React.FC = () => {
   // 显示退出总结信息
   const tokenUsage = `${(totalUsage/1000).toFixed(1)}K tokens`;
   const summary = `会话 ${sessionId} 已结束`;
+  const dateStr = getDateStr();
+  const logFilePath = path.join(logsDir, dateStr, `${sessionId}.jsonl`);
   
 
   // 处理 Ctrl+C 按键
@@ -96,6 +100,7 @@ const ExitHandler: React.FC = () => {
       <Box flexDirection='column'>
         <Text color={Colors.AccentYellow}>{summary}</Text>
         <Text color={Colors.AccentYellow}>使用 {tokenUsage}</Text>
+        <Text color={Colors.AccentYellow}>日志 {logFilePath}</Text>
       </Box>
     );
   }
