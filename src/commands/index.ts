@@ -18,6 +18,7 @@ export class CommandRegistry {
   }
   
   private registerDefaultCommands() {
+    this.register(new InitCommand());
     this.register(new ModelCommand());
     this.register(new ConfigCommand());
     this.register(new ClearCommand());
@@ -26,7 +27,6 @@ export class CommandRegistry {
     this.register(new ONESaveDesignCommand());
     this.register(new ONEoneWritePlanCommand());
     this.register(new ONEExecutePlanCommand());
-    this.register(new InitCommand());
   }
   
   register(command: Command) {

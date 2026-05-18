@@ -2,7 +2,7 @@ import { BaseCommand, CommandContext } from "../command";
 
 export class ConfigCommand extends BaseCommand {
   name = '/config';
-  description = '配置';
+  description = '展示当前配置';
   
   execute({ base, setText, pushUIMessage }: CommandContext, input?: string): void {
 
