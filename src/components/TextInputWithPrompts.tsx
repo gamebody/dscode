@@ -188,15 +188,15 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
       }
     }
 
-    // 上下箭头浏览历史
-    if (key.upArrow) {
+    // 上下箭头浏览历史（仅在建议列表不可见时使用）
+    if (key.upArrow && !visible) {
       const historyText = navigateUp()
       if (historyText !== null) {
         setText(historyText)
         setVisible(false)
         inputRef.current?.setCursorOffset(historyText.length)
       }
-    } else if (key.downArrow) {
+    } else if (key.downArrow && !visible) {
       const historyText = navigateDown()
       if (historyText !== null) {
         setText(historyText)
