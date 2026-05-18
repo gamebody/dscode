@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { ApprovalCategory } from '../utils/constants.js';
-import { CodeTalkAgentContext } from '../agents/codeTalkAgent.js';
+import { CodeAgentContext } from '../agents/codeAgent.js';
 
 
 const description = `Use this tool when you need to ask the user questions during execution. This allows you to:
@@ -105,7 +105,7 @@ const outputSchema = z.object({
 
 export const askUserQuestionExecutor = async ({ 
   questions
-}: z.infer<typeof inputSchema>, context: CodeTalkAgentContext, qas: { q: string, a: string }[]) => {
+}: z.infer<typeof inputSchema>, context: CodeAgentContext, qas: { q: string, a: string }[]) => {
   if (!qas || qas.length === 0) {
     return {
       isError: true,
