@@ -227,6 +227,15 @@ export const stateCreator: StateCreator<
                 input: (() => { try { return JSON.parse(tc.function.arguments) } catch { return {} } })(),
               } as any
 
+              if (shouldStopLoop) {
+                toolResultMessages.push({
+                  role: 'tool' as any,
+                  tool_call_id: tc.id,
+                  content: JSON.stringify({ error: 'Cancelled: user disagreed with a previous action' }),
+                })
+                continue
+              }
+
               const approvalCategory = agent.approvalCategory(bridge)
 
               if (approvalCategory === ApprovalCategory.WRITE) {
@@ -234,9 +243,7 @@ export const stateCreator: StateCreator<
                   const userDecision = await get().approval.requestApproval(bridge)
                   if (userDecision === 'disagree') {
                     shouldStopLoop = true
-                    break
-                  }
-                  if (userDecision === 'agree_all_session') {
+                  } else if (userDecision === 'agree_all_session') {
                     get().agent.setSessionApproved(true)
                   }
                 }
@@ -247,9 +254,7 @@ export const stateCreator: StateCreator<
                   const userDecision = await get().approval.requestApproval(bridge)
                   if (userDecision === 'disagree') {
                     shouldStopLoop = true
-                    break
-                  }
-                  if (userDecision === 'agree_all_session') {
+                  } else if (userDecision === 'agree_all_session') {
                     get().agent.setSessionApproved(true)
                   }
                 }
@@ -260,8 +265,16 @@ export const stateCreator: StateCreator<
                 userAnswer = await get().approval.requestAnswer(bridge)
                 if (userAnswer === null) {
                   shouldStopLoop = true
-                  break
                 }
+              }
+
+              if (shouldStopLoop) {
+                toolResultMessages.push({
+                  role: 'tool' as any,
+                  tool_call_id: tc.id,
+                  content: JSON.stringify({ error: 'Action rejected by user' }),
+                })
+                continue
               }
 
               const toolResponse = await agent.executeTool(bridge, userAnswer || '')
@@ -279,7 +292,6 @@ export const stateCreator: StateCreator<
                 }
               })
 
-              // Collect tool result message (OpenAI format)
               toolResultMessages.push({
                 role: 'tool' as any,
                 tool_call_id: tc.id,
@@ -287,16 +299,15 @@ export const stateCreator: StateCreator<
               })
             }
 
+            if (toolResultMessages.length > 0) {
+              agent.appendMessage(toolResultMessages as any)
+            }
+
             if (shouldStopLoop) {
               get().agent.setLoading(false)
               break
             }
 
-            // Append all tool result messages at once
-            if (toolResultMessages.length > 0) {
-              agent.appendMessage(toolResultMessages as any)
-            }
-            // Continue the loop — model may produce another response after tool results
             continue
           }
 
