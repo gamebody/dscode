@@ -120,6 +120,7 @@ prisma/
 - Do NOT include this instruction block in the output file.
 - Do NOT use placeholder text like "[command]" — write the actual command or omit.
 - After writing .AGENTS.md, check if .gitignore exists. If it does and .AGENTS.md is not already listed, append ".AGENTS.md" to it.
+- At the very end of .AGENTS.md, add a single-line summary: <!-- AGENTS_SUMMARY --><project_name> | <1-sentence description> | <key tech stack> | <main commands>
 
 Arguments: ${param}`;
 

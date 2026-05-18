@@ -9,6 +9,8 @@ import { bashExecutor, bashTool } from "../tools/bash.js";
 import path from "path";
 import { generateSystemPrompt } from "../prompts/codeAgentSystem.js";
 import { askUserQuestionExecutor, askUserQuestionTool } from "../tools/askUserQuestion.js";
+import { readProjectSummary } from "../../../utils/projectContext.js";
+import { projectContextExecutor, projectContextTool } from "../tools/project_context.js";
 
 
 export interface BackgroundTask {
@@ -33,10 +35,14 @@ export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal
     thinkingMode: thinkingMode,
     setContextCallback(context: CodeAgentContext) {
 
+      const projectSummary = readProjectSummary(context.cwd)
       agent.setSystem(generateSystemPrompt({
         todo: true,
         productName: context.productName,
         language: 'English',
+        appendSystemPrompt: projectSummary
+          ? `## Project Context\n${projectSummary}`
+          : undefined,
       }))
 
       const filePath = path.join(context.todosDir, `${agent.getSessionId()}.json`)
@@ -76,6 +82,9 @@ export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal
 
   agent.registerTool('askUserQuestion', askUserQuestionTool)
   agent.registerToolExecutor('askUserQuestion', askUserQuestionExecutor)
+
+  agent.registerTool('project_context', projectContextTool)
+  agent.registerToolExecutor('project_context', projectContextExecutor)
 
   return agent
 }
