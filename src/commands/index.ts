@@ -8,6 +8,7 @@ import { ONESaveDesignCommand } from './build-in/one:save-design';
 import { ONEoneWritePlanCommand } from './build-in/one:write-plan';
 import { ONEExecutePlanCommand } from './build-in/one:execute-plan';
 import { InitCommand } from './build-in/init';
+import { HelpCommand } from './build-in/help';
 
 
 export class CommandRegistry {
@@ -23,6 +24,7 @@ export class CommandRegistry {
     this.register(new ConfigCommand());
     this.register(new ClearCommand());
     this.register(new ExitCommand());
+    this.register(new HelpCommand());
     this.register(new ONEDesignCommand());
     this.register(new ONESaveDesignCommand());
     this.register(new ONEoneWritePlanCommand());
