@@ -6,9 +6,14 @@ export class ONEExecutePlanCommand extends BaseCommand {
   
   execute(context: CommandContext, input?: string): void {
     const { appendMessage, setText, pushUIMessage, runLoop } = context;
+    const fullInput = input || this.name;
+    
+    // 提取参数部分（如果有）
+    const param = fullInput.substring(this.name.length).trim();
+    
     pushUIMessage({
       role: 'user',
-      content: 'one:execute-plan'
+      content: fullInput
     })
     appendMessage({
       role: 'user',
@@ -83,7 +88,8 @@ After all tasks complete and verified:
 - Don't skip verifications
 - Between batches: just report and wait
 - Stop when blocked, don't guess
-`,
+
+Arguments ${param}`,
     });
     setText('');
 
