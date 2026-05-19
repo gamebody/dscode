@@ -1,3 +1,4 @@
+import resolveAtReferences from "../../utils/resolveAtReferences.js";
 import { BaseCommand, CommandContext } from "../command.js";
 
 export class ONEExecutePlanCommand extends BaseCommand {
@@ -89,7 +90,7 @@ After all tasks complete and verified:
 - Between batches: just report and wait
 - Stop when blocked, don't guess
 
-Arguments ${param}`,
+Arguments ${resolveAtReferences(param, context.base.cwd)}`,
     });
     setText('');
 
