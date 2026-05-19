@@ -30,8 +30,13 @@ export class HelpCommand extends BaseCommand {
   name = '/help';
   description = '显示帮助文档';
 
-  execute(context: CommandContext): void {
-    const { pushUIMessage, setText } = context;
+  execute(context: CommandContext, input: string): void {
+    const { pushUIMessage, setText, } = context;
+
+    pushUIMessage({
+      role: 'user',
+      content: input
+    })
 
     pushUIMessage({
       role: 'assistant',
