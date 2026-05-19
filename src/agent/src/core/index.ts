@@ -96,7 +96,7 @@ export default class Core {
   private thinkingMode: 'off' | 'high' | 'max'
   private sessionId: string
   private client: OpenAI
-  private logger: MessageLogger | null = null
+  public logger: MessageLogger | null = null
 
   constructor(config?: Config | undefined) {
     this.system = config?.system

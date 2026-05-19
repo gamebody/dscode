@@ -45,12 +45,18 @@ export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal
         skillSummary || undefined,
       ].filter(Boolean).join("\n\n")
 
-      agent.setSystem(generateSystemPrompt({
+      const systemPrompt = generateSystemPrompt({
         todo: true,
         productName: context.productName,
         language: 'English',
         appendSystemPrompt: combinedAppend || undefined,
-      }))
+      })
+
+      agent.setSystem(systemPrompt)
+
+      if (agent.logger) {
+        agent.logger.logMessage({ role: 'system', content: systemPrompt })
+      }
 
       const filePath = path.join(context.todosDir, `${agent.getSessionId()}.json`)
       const {
