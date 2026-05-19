@@ -24,6 +24,8 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const [isFileSearch, setIsFileSearch] = useState(false)
   const [fileSearchTerm, setFileSearchTerm] = useState('')
 
+  const visibleRef = useRef(visible)
+
   const [items, setItems] = useState<SuggestionsSelectItem<string>[]>(() => {
     const commands = commandRegistry.getAllCommands();
     return commands.map(cmd => ({
@@ -131,6 +133,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
 
   useEffect(() => {
+    visibleRef.current = visible
     if (!visible) {
       const commands = commandRegistry.getAllCommands();
       setItems(commands.map(cmd => ({
@@ -167,7 +170,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
     
     // Tab 键处理：当有可见建议时，选择第一个建议
-    if (key.tab && visible && items.length > 0) {
+    if (key.tab && visibleRef.current && items.length > 0) {
       const firstItem = items[0];
       if (isFileSearch) {
         // 文件搜索模式：替换@搜索词为完整路径
@@ -192,14 +195,14 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
 
     // 上下箭头浏览历史（仅在建议列表不可见时使用）
-    if (key.upArrow && !visible) {
+    if (key.upArrow && !visibleRef.current) {
       const historyText = navigateUp()
       if (historyText !== null) {
         setText(historyText)
         setVisible(false)
         inputRef.current?.setCursorOffset(historyText.length)
       }
-    } else if (key.downArrow && !visible) {
+    } else if (key.downArrow && !visibleRef.current) {
       const historyText = navigateDown()
       if (historyText !== null) {
         setText(historyText)
