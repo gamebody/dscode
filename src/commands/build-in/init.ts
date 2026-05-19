@@ -52,7 +52,7 @@ The file MUST use YAML frontmatter followed by Markdown:
 \`\`\`markdown
 ---
 name: project
-description: <1句话项目描述>
+description: <一句话项目概述，明确写明何时应调用此skill，使AI在需要了解项目时优先调用>
 ---
 
 # <项目名>
@@ -87,7 +87,7 @@ A well-formed example:
 \`\`\`markdown
 ---
 name: project
-description: CLI-based AI coding assistant built with Ink (React for terminal UIs)
+description: CLI-based AI coding assistant built with Ink (React for terminal UIs). Call this skill when coding, debugging, or understanding this project's architecture.
 ---
 
 # dscode
@@ -147,7 +147,7 @@ src/
 - Do NOT include this instruction block in the output file.
 - Do NOT use placeholder text like "[command]" — write the actual command or omit.
 - The \`name\` field in frontmatter MUST be \`project\`.
-- The \`description\` field in frontmatter MUST be one concise sentence.
+- The \`description\` field is critical: it determines when AI will call this skill. Write one concise sentence covering **what** the project is and **when** to use this skill, so any AI wanting to understand the project calls it first.
 - After writing SKILL.md, check if .gitignore exists. If it does and ".agents" is not already listed, append ".agents" to it.
 
 Arguments: ${param}`;
