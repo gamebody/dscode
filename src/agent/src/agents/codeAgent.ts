@@ -11,6 +11,8 @@ import { generateSystemPrompt } from "../prompts/codeAgentSystem.js";
 import { askUserQuestionExecutor, askUserQuestionTool } from "../tools/askUserQuestion.js";
 import { readProjectSummary } from "../../../utils/projectContext.js";
 import { projectContextExecutor, projectContextTool } from "../tools/project_context.js";
+import { skillExecutor, skillToolDef } from "../tools/skill.js";
+import { SkillsManager } from "../../../skills/index.js";
 
 
 export interface BackgroundTask {
@@ -36,13 +38,19 @@ export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal
     setContextCallback(context: CodeAgentContext) {
 
       const projectSummary = readProjectSummary(context.cwd)
+      const skillsMgr = new SkillsManager(context.cwd)
+      const skillSummary = skillsMgr.formatSummary()
+
+      const combinedAppend = [
+        projectSummary ? `## Project Context\n${projectSummary}` : undefined,
+        skillSummary || undefined,
+      ].filter(Boolean).join("\n\n")
+
       agent.setSystem(generateSystemPrompt({
         todo: true,
         productName: context.productName,
         language: 'English',
-        appendSystemPrompt: projectSummary
-          ? `## Project Context\n${projectSummary}`
-          : undefined,
+        appendSystemPrompt: combinedAppend || undefined,
       }))
 
       const filePath = path.join(context.todosDir, `${agent.getSessionId()}.json`)
@@ -85,6 +93,9 @@ export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal
 
   agent.registerTool('project_context', projectContextTool)
   agent.registerToolExecutor('project_context', projectContextExecutor)
+
+  agent.registerTool('skill', skillToolDef)
+  agent.registerToolExecutor('skill', skillExecutor)
 
   return agent
 }

@@ -9,6 +9,7 @@ import { todoWriteTool } from "./todoWrite-json";
 import { todoReadTool } from "./todoRead-json";
 import { askUserQuestionTool } from "./askUserQuestion-json";
 import { projectContextTool } from "./project_context-json";
+import { skillTool } from "./skill-json";
 
 export const openaiTools: ChatCompletionTool[] = [
   readTool,
@@ -21,4 +22,5 @@ export const openaiTools: ChatCompletionTool[] = [
   todoReadTool,
   askUserQuestionTool,
   projectContextTool,
+  skillTool,
 ];
