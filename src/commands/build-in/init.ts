@@ -2,7 +2,7 @@ import { BaseCommand, CommandContext } from "../command";
 
 export class InitCommand extends BaseCommand {
   name = '/init';
-  description = '初始化项目 AI 上下文 (.AGENTS.md)';
+  description = '初始化项目 AI 上下文 (Skill)';
 
   execute(context: CommandContext, input?: string): void {
     const { appendMessage, setText, pushUIMessage, runLoop } = context;
@@ -15,13 +15,13 @@ export class InitCommand extends BaseCommand {
       content: fullInput
     })
 
-    const prompt = `# Generate .AGENTS.md
+    const prompt = `# Generate Project Skill
 
 ## Role
 
-You are a project analyst. Your task is to explore the current project and produce a \`.AGENTS.md\` file following the standard CLAUDE.md convention — the widely adopted format used by AI coding assistants (Claude, Cursor, Copilot, etc.) to understand a project.
+You are a project analyst. Your task is to explore the current project and produce a comprehensive technical reference document as a skill file at \`.agents/skills/project/SKILL.md\`. This skill will be loaded by the AI assistant to understand the project's tech stack, structure, conventions, and commands.
 
-**Announce at start:** "I'm analyzing this project to generate .AGENTS.md."
+**Announce at start:** "我将分析此项目并生成项目 Skill 文件。"
 
 **Language:** Please communicate in chinese.
 
@@ -42,74 +42,101 @@ Identify:
 - **Test strategy** — framework, where tests live, how to run them
 - **Dev commands** — dev server, lint, typecheck, test, build
 - **Coding conventions** — style, naming, patterns observed in the code
-- **Deployment** — how it's deployed, CI/CD if detectable
 
-### Step 3: Generate .AGENTS.md
+### Step 3: Generate SKILL.md
 
-Write the file to \`.AGENTS.md\` in the project root.
+Write the file to \`.agents/skills/project/SKILL.md\` in the project root.
 
-Follow the standard CLAUDE.md conventions:
+The file MUST use YAML frontmatter followed by Markdown:
 
-- **Start with a brief project description** — 1-2 sentences
-- **Structure with concise sections**, each with bullet points
-- **Always include exact commands** that AI can copy-paste (build, test, lint, dev)
-- **Be specific to this project** — no placeholders or generic templates
-- **Keep it scannable** — short lines, clear hierarchy, minimal prose
-- **Include a "Common Operations" section** for frequently used workflows
+\`\`\`markdown
+---
+name: project
+description: <1句话项目描述>
+---
+
+# <项目名>
+
+<1段简介>
+
+## Tech Stack
+- <运行时>: <版本>
+- ...
+
+## Commands
+\`\`\`
+cmd1  # 说明
+cmd2  # 说明
+\`\`\`
+
+## Project Structure
+\`\`\`
+src/
+  xxx/  用途
+\`\`\`
+
+## Conventions
+- <约定>
+
+## Common Operations
+- \`cmd\` — 说明
+\`\`\`
 
 A well-formed example:
 
 \`\`\`markdown
-# my-project
+---
+name: project
+description: CLI-based AI coding assistant built with Ink (React for terminal UIs)
+---
 
-Full-stack task management app built with Next.js and Prisma.
+# dscode
+
+CLI-based AI coding assistant built with Ink (React for terminal UIs).
 
 ## Tech Stack
-
-- Next.js 14 (App Router), React, TypeScript
-- Prisma ORM, PostgreSQL
-- Tailwind CSS, shadcn/ui
-- Vitest, Playwright
+- **Runtime**: Bun (v1.3+)
+- **Language**: TypeScript, React (TSX)
+- **UI**: Ink v6 (React renderer for terminal)
+- **AI**: Vercel AI SDK (ai v5), OpenAI-compatible provider
+- **State**: Zustand + Immer
+- **Validation**: Zod
+- **CLI**: yargs
+- **Themes**: Built-in syntax highlighting themes (15+ themes)
 
 ## Commands
-
 \`\`\`
-pnpm dev          # Start dev server
-pnpm build        # Production build
-pnpm test         # Run unit tests
-pnpm test:e2e     # Run E2E tests
-pnpm lint         # ESLint
-pnpm typecheck    # tsc --noEmit
-pnpm db:push      # Push schema to DB
-pnpm db:studio    # Open Prisma Studio
+bun dev              # Start dev server with --watch
+bun build            # Production bundle -> bundle/dscode.js
+bun test             # Run tests (bun test)
+bun install          # Install dependencies
+bunx dscode          # Run the CLI tool (if linked)
 \`\`\`
 
 ## Project Structure
-
 \`\`\`
+index.tsx                     Entry point — renders Ink app
 src/
-  app/          Next.js App Router pages and API routes
-  components/   Shared React components
-  lib/          Utilities, db client, helpers
-  features/     Feature-specific modules
-  types/        Shared TypeScript types
-prisma/
-  schema.prisma Database schema
+  App.tsx                     Root component
+  agent/                      AI agent engine
+  commands/                   Command system
+  components/                 Ink UI components
+  contexts/                   React contexts
+  store/                      Zustand stores
+  themes/                     Terminal color themes (15+ themes)
+  utils/                      Utilities
 \`\`\`
 
 ## Conventions
-
-- Use named exports for components and functions
-- Co-locate tests next to source files (*.test.ts)
-- Barrel exports via index.ts for each directory
-- Feature folders encapsulate all related files
-- Database queries go through Prisma service layer
+- Use \`.js\` extension in import paths (Bun convention for ESM)
+- Functional React components with Ink primitives (Box, Text, etc.)
+- Zustand stores accessed via \`useStoreContext\` hook
+- Built-in commands extend \`BaseCommand\` abstract class
 
 ## Common Operations
-
-- \`pnpm db:push && pnpm db:generate\` after schema changes
-- \`pnpm test -- --watch\` during development
-- \`pnpm lint --fix\` before committing
+- \`bun dev\` — start in watch mode for development
+- \`bun build\` — build production bundle
+- \`bun test\` — run all tests
 \`\`\`
 
 ## Rules
@@ -119,8 +146,9 @@ prisma/
 - If something is unclear or cannot be determined, skip it.
 - Do NOT include this instruction block in the output file.
 - Do NOT use placeholder text like "[command]" — write the actual command or omit.
-- After writing .AGENTS.md, check if .gitignore exists. If it does and .AGENTS.md is not already listed, append ".AGENTS.md" to it.
-- At the very end of .AGENTS.md, add a single-line summary: <!-- AGENTS_SUMMARY --><project_name> | <1-sentence description> | <key tech stack> | <main commands>
+- The \`name\` field in frontmatter MUST be \`project\`.
+- The \`description\` field in frontmatter MUST be one concise sentence.
+- After writing SKILL.md, check if .gitignore exists. If it does and ".agents" is not already listed, append ".agents" to it.
 
 Arguments: ${param}`;
 

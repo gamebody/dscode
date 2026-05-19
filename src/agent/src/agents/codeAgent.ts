@@ -10,7 +10,6 @@ import path from "path";
 import { generateSystemPrompt } from "../prompts/codeAgentSystem.js";
 import { askUserQuestionExecutor, askUserQuestionTool } from "../tools/askUserQuestion.js";
 import { readProjectSummary } from "../../../utils/projectContext.js";
-import { projectContextExecutor, projectContextTool } from "../tools/project_context.js";
 import { skillExecutor, skillToolDef } from "../tools/skill.js";
 import { SkillsManager } from "../../../skills/index.js";
 
@@ -90,9 +89,6 @@ export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal
 
   agent.registerTool('askUserQuestion', askUserQuestionTool)
   agent.registerToolExecutor('askUserQuestion', askUserQuestionExecutor)
-
-  agent.registerTool('project_context', projectContextTool)
-  agent.registerToolExecutor('project_context', projectContextExecutor)
 
   agent.registerTool('skill', skillToolDef)
   agent.registerToolExecutor('skill', skillExecutor)
