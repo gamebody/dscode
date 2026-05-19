@@ -1,10 +1,10 @@
 import React from "react";
-import { Box, Text } from "ink";
+import { Box, Newline, Text } from "ink";
 import { Colors } from "../utils/colors";
 import { useStoreContext } from "../store/index";
 
 const tips: string[] = [
-  'Shift+Tab 切换 Agent/YOLO 模式',
+  'Shift + Tab 切换 Agent/YOLO 模式',
   'Agent 模式: 执行前需确认; YOLO 模式: 自动执行',
   '按 Ctrl+C 两次可安全退出程序',
   '输入 @ 触发文件搜索，Tab 或 Enter 选择',
@@ -13,10 +13,6 @@ const tips: string[] = [
   '按 Enter 提交输入或确认选择',
   '按 Esc 取消当前 AI 操作',
   '输入 / 查看所有可用内置指令',
-  '描述需求越详细，AI 生成结果越精准',
-  '你可以分段描述复杂任务，逐步推进',
-  'AI 可以直接创建、编辑和读取项目文件',
-  '你可以随时要求 AI 解释它生成的代码',
 ]
 
 let shuffled: string[] = []
@@ -41,7 +37,7 @@ function getNextTip(allTips: string[]): string {
   return shuffled[idx++]!
 }
 
-const PAT = /(\/[^\s]+|Ctrl\+\w|Shift\+\w|↑|↓|Tab|Enter|Esc|Agent|YOLO|@)/g
+const PAT = /(\/[^\s]+|Ctrl\+\w|Shift|\/|↑|↓|Tab|Enter|Esc|Agent|YOLO|@)/g
 
 function highlightTip(text: string, hlColor: string): React.ReactNode[] {
   const parts = text.split(PAT)
@@ -62,14 +58,11 @@ const Tips: React.FC = () => {
     <Box flexDirection="column">
       <Box>
         <Text>
-          {'\n'}
-          <Text color={Colors.AccentGreen}>请尝试以下操作：</Text>
-          {'\n'}
-          {'\n'}
+          <Newline />
           {items.map((tip, i) => (
             <Text key={i}>
-              {' '}{i + 1}. {highlightTip(tip, HL)}
-              {'\n'}
+              {i + 1}. {highlightTip(tip, HL)}
+              <Newline />
             </Text>
           ))}
         </Text>

@@ -57,7 +57,7 @@ const History: React.FC<HistoryProps> = () => {
           </Box>,
           <Box key='Version'>
             <Gradient name="rainbow">
-              <Text>{productName} v{version}</Text>
+              <Text>欢迎使用 {productName} {version}</Text>
             </Gradient>
           </Box>,
           <Tips key='Tips' />,
