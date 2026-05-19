@@ -18,7 +18,7 @@
     "gpt-tokenizer": "^3.4.0",
     "hast": "^1.0.0",
     "immer": "^10.1.1",
-    "ink": "6.7.0",
+    "ink": "7.0.3",
     "ink-big-text": "^2.0.0",
     "ink-gradient": "^3.0.0",
     "ink-link": "^4.0.0",

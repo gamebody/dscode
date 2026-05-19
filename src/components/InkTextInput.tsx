@@ -1,4 +1,4 @@
-import React, {useState, useEffect, forwardRef, useImperativeHandle} from 'react';
+import React, {useState, useEffect, useRef, forwardRef, useImperativeHandle} from 'react';
 import {Text, useInput} from 'ink';
 import chalk from 'chalk';
 import type {Except} from 'type-fest';
@@ -65,6 +65,20 @@ const TextInput = forwardRef(function TextInput({
 	});
 
 	const {cursorOffset,cursorWidth} = state;
+
+	// Refs to keep latest values available inside the useInput callback,
+	// which is memoized in Ink 7 and would otherwise capture stale closures.
+	const originalValueRef = useRef(originalValue);
+	originalValueRef.current = originalValue;
+
+	const cursorOffsetRef = useRef(cursorOffset);
+	cursorOffsetRef.current = cursorOffset;
+
+	const onChangeRef = useRef(onChange);
+	onChangeRef.current = onChange;
+
+	const onSubmitRef = useRef(onSubmit);
+	onSubmitRef.current = onSubmit;
 
   useImperativeHandle(ref, () => {
     return {
@@ -141,15 +155,18 @@ const TextInput = forwardRef(function TextInput({
 			}
 
 			if (key.return) {
-				if (onSubmit) {
-					onSubmit(originalValue);
+				const submitFn = onSubmitRef.current;
+				if (submitFn) {
+					submitFn(originalValueRef.current);
 				}
 
 				return;
 			}
 
-			let nextCursorOffset = cursorOffset;
-			let nextValue = originalValue;
+			const currentCursorOffset = cursorOffsetRef.current;
+			const currentValue = originalValueRef.current;
+			let nextCursorOffset = currentCursorOffset;
+			let nextValue = currentValue;
 			let nextCursorWidth = 0;
 
 			if (key.leftArrow) {
@@ -161,18 +178,18 @@ const TextInput = forwardRef(function TextInput({
 					nextCursorOffset++;
 				}
 			} else if (key.backspace || key.delete) {
-				if (cursorOffset > 0) {
+				if (currentCursorOffset > 0) {
 					nextValue =
-						originalValue.slice(0, cursorOffset - 1) +
-						originalValue.slice(cursorOffset, originalValue.length);
+						currentValue.slice(0, currentCursorOffset - 1) +
+						currentValue.slice(currentCursorOffset, currentValue.length);
 
 					nextCursorOffset--;
 				}
 			} else {
 				nextValue =
-					originalValue.slice(0, cursorOffset) +
+					currentValue.slice(0, currentCursorOffset) +
 					input +
-					originalValue.slice(cursorOffset, originalValue.length);
+					currentValue.slice(currentCursorOffset, currentValue.length);
 
 				nextCursorOffset += input.length;
 
@@ -181,12 +198,12 @@ const TextInput = forwardRef(function TextInput({
 				}
 			}
 
-			if (cursorOffset < 0) {
+			if (nextCursorOffset < 0) {
 				nextCursorOffset = 0;
 			}
 
-			if (cursorOffset > originalValue.length) {
-				nextCursorOffset = originalValue.length;
+			if (nextCursorOffset > nextValue.length) {
+				nextCursorOffset = nextValue.length;
 			}
 
 			setState({
@@ -194,8 +211,8 @@ const TextInput = forwardRef(function TextInput({
 				cursorWidth: nextCursorWidth,
 			});
 
-			if (nextValue !== originalValue) {
-				onChange(nextValue);
+			if (nextValue !== currentValue) {
+				onChangeRef.current(nextValue);
 			}
 		},
 		{isActive: focus},

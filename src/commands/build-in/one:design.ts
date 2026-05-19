@@ -1,3 +1,4 @@
+import resolveAtReferences from "../../utils/resolveAtReferences";
 import { BaseCommand, CommandContext } from "../command";
 
 
@@ -15,7 +16,7 @@ export class ONEDesignCommand extends BaseCommand {
     
     appendMessage({
       role: 'user',
-      content: fullInput,
+      content: resolveAtReferences(fullInput, context.base.cwd),
     });
     pushUIMessage({
       role: 'user',
