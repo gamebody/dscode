@@ -13,6 +13,8 @@ export interface CommandContext {
   runLoop: () => void;
   base: Base
   clear: () => void;
+  setExitConfirmState: (state: 'idle' | 'confirming' | 'exiting') => void;
+  setIsStatusBarVisible: (visible: boolean) => void;
 }
 
 export interface Command {

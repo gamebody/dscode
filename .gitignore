@@ -37,3 +37,6 @@ bundle
 
 # AI agent project description
 .AGENTS.md
+
+# AI agent skills
+.agents

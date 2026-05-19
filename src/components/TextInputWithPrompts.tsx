@@ -60,6 +60,8 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const setStatusText = useStoreContext(s => s.bar.setStatusText)
   const setSessionId = useStoreContext(s => s.bar.setSessionId)
   const barReset = useStoreContext(s => s.bar.reset)
+  const setExitConfirmState = useStoreContext(s => s.bar.setExitConfirmState)
+  const setIsStatusBarVisible = useStoreContext(s => s.bar.setIsStatusBarVisible)
 
 
 
@@ -237,6 +239,8 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         firstMessageRecorded.current = false
       }
     },
+    setExitConfirmState,
+    setIsStatusBarVisible,
   };
 
   return (
