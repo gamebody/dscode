@@ -10,8 +10,8 @@ import { codeAgent, CodeAgentContext, ModelMessage } from "../agent";
 import ModelSelect from "./ModelSelect";
 import { commandRegistry } from "../commands/index";
 import { fuzzySearchFiles, extractFileSearchTerm, replaceFileSearchTerm, FileSearchResult } from "../utils/fileSearch";
-import path from 'path';
-import fs from 'fs';
+import resolveAtReferences from "../utils/resolveAtReferences";
+
 
 export type TextInputWithPromptsProps = {
 };
@@ -209,18 +209,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
   })
 
-  const resolveAtReferences = (text: string, cwd: string): string => {
-    return text.replace(/@(\S+)/g, (match, p1) => {
-      if (path.isAbsolute(p1)) return match;
-      const absPath = path.resolve(cwd, p1);
-      try {
-        if (fs.existsSync(absPath)) {
-          return `@${absPath}`;
-        }
-      } catch {}
-      return match;
-    });
-  };
+
 
   const context = {
     setText,

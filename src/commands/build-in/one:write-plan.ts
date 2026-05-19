@@ -1,3 +1,4 @@
+import resolveAtReferences from "../../utils/resolveAtReferences.js";
 import { BaseCommand, CommandContext } from "../command.js";
 
 export class ONEoneWritePlanCommand extends BaseCommand {
@@ -97,7 +98,7 @@ Expected: PASS
 - Exact commands with expected output
 - DRY, YAGNI
 
-Arguments: ${param}`;
+Arguments: ${resolveAtReferences(param, context.base.cwd)}`;
     
     appendMessage({
       role: 'user',
