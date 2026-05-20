@@ -24,6 +24,7 @@ export class MessageLogger {
   constructor(baseDir: string, sessionId: string) {
     this.baseDir = baseDir
     this.sessionId = sessionId
+    this.ensureFile()
   }
 
   private async ensureFile(): Promise<string> {
@@ -37,6 +38,9 @@ export class MessageLogger {
         await mkdir(dir, { recursive: true })
       }
       this.filePath = join(dir, `${this.sessionId}.jsonl`)
+      if (!existsSync(this.filePath)) {
+        await writeFile(this.filePath, '', 'utf-8')
+      }
       return this.filePath
     })()
 
