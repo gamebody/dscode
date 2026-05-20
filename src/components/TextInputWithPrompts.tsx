@@ -65,6 +65,9 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const setExitConfirmState = useStoreContext(s => s.bar.setExitConfirmState)
   const setIsStatusBarVisible = useStoreContext(s => s.bar.setIsStatusBarVisible)
 
+  const buddyLifetimeTokens = useStoreContext(s => s.buddy.lifetimeTokens)
+  const getBuddyStage = useStoreContext(s => s.buddy.getStage)
+
 
 
   const sendMessage = useStoreContext(s => s.agent.sendMessage)
@@ -244,6 +247,10 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     },
     setExitConfirmState,
     setIsStatusBarVisible,
+    buddy: {
+      lifetimeTokens: buddyLifetimeTokens,
+      getStage: getBuddyStage,
+    },
   };
 
   return (
