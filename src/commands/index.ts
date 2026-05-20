@@ -1,6 +1,6 @@
 import { ExitCommand } from './build-in/exit';
 import { ModelCommand } from './build-in/model';
-import { ClearCommand } from './build-in/clear';
+import { NewCommand } from './build-in/new';
 import { Command, CommandContext } from './command';
 import { ConfigCommand } from './build-in/config';
 import { ONEDesignCommand } from './build-in/one:design';
@@ -23,7 +23,7 @@ export class CommandRegistry {
     this.register(new InitCommand());
     this.register(new ModelCommand());
     this.register(new ConfigCommand());
-    this.register(new ClearCommand());
+    this.register(new NewCommand());
     this.register(new ExitCommand());
     this.register(new HelpCommand());
     this.register(new ONEDesignCommand());
