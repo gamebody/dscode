@@ -188,10 +188,10 @@ export default class Core {
     this.toolExecutors[toolName] = executor
   }
 
-  appendMessage(message: ModelMessage | ModelMessage[]) {
+  appendMessage(message: ModelMessage | ModelMessage[], log = true) {
     if (Array.isArray(message)) {
       this.messages.push(...message)
-      if (this.logger) {
+      if (log && this.logger) {
         for (const msg of message) {
           this.logger.logMessage(msg)
         }
@@ -199,7 +199,9 @@ export default class Core {
       return
     }
     this.messages.push(message)
-    this.logger?.logMessage(message)
+    if (log) {
+      this.logger?.logMessage(message)
+    }
   }
 
   clearMessages() {

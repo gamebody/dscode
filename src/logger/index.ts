@@ -60,9 +60,6 @@ export class MessageLogger {
     await this.log({ type: 'message', sessionId: this.sessionId, data: message })
   }
 
-  async logResponse(response: unknown): Promise<void> {
-    await this.log({ type: 'response', sessionId: this.sessionId, data: response })
-  }
 }
 
 export interface CrashInfo {

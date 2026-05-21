@@ -230,11 +230,12 @@ export const stateCreator: StateCreator<
               } as any
 
               if (shouldStopLoop) {
-                toolResultMessages.push({
-                  role: 'tool',
+                const message = {
+                  role: 'tool' as const,
                   tool_call_id: tc.id,
                   content: JSON.stringify({ error: 'Cancelled: user disagreed with a previous action' }),
-                })
+                }
+                toolResultMessages.push(message)
                 continue
               }
 
@@ -276,11 +277,19 @@ export const stateCreator: StateCreator<
               }
 
               if (shouldStopLoop) {
-                toolResultMessages.push({
-                  role: 'tool',
+                const message = {
+                  role: 'tool' as const,
                   tool_call_id: tc.id,
                   content: JSON.stringify({ error: 'Action rejected by user' }),
+                }
+                get().agent.pushUIMessage({
+                  role: 'user' as const,
+                  content: JSON.stringify({ error: 'Action rejected by user' })
                 })
+                agent.logger?.logMessage({
+                  ...message,
+                })
+                toolResultMessages.push(message)
                 continue
               }
 
@@ -299,15 +308,21 @@ export const stateCreator: StateCreator<
                 }
               })
 
-              toolResultMessages.push({
-                role: 'tool',
+              const message = {
+                role: 'tool' as const,
                 tool_call_id: tc.id,
                 content: JSON.stringify(toolResponse.payload),
+              }
+              toolResultMessages.push(message)
+
+              agent.logger?.logMessage({
+                ...message,
+                returnDisplay: toolResponse.returnDisplay,
               })
             }
 
             if (toolResultMessages.length > 0) {
-              agent.appendMessage(toolResultMessages)
+              agent.appendMessage(toolResultMessages, false)
             }
 
             if (shouldStopLoop) {
