@@ -1,4 +1,3 @@
-import type { ModelMessage } from 'ai';
 import Core from './src/core/index.js';
 import codeAgent, { type CodeAgentContext } from './src/agents/codeAgent.js';
 import type { LsTool } from './src/tools/ls.js';
@@ -10,7 +9,7 @@ import type { TodoReadTool, TodoWriteTool } from './src/tools/todo.js';
 import type { BashTool } from './src/tools/bash.js';
 import type { AskUserQuestionTool } from './src/tools/askUserQuestion.js';
 import { ApprovalCategory } from './src/utils/constants.js';
-import type { StreamEvent } from './src/core/index.js';
+import type { ModelMessage, StreamEvent } from './src/core/index.js';
 
 export {
   Core,

@@ -4,6 +4,7 @@ import { StateActions } from './index'
 import { ApprovalCategory, AskUserQuestionTool, BashTool, Core, EditTool, GlobTool, LsTool, ModelMessage, ReadTool, TodoReadTool, TodoWriteTool, WriteTool } from '../agent'
 import { log } from 'console'
 import { QA } from './approval'
+import { ChatCompletionToolMessageParam } from 'openai/resources/index.mjs'
 
 
 export type Tools = ReadTool | LsTool | GlobTool | WriteTool | EditTool | TodoWriteTool | TodoReadTool | BashTool | AskUserQuestionTool
@@ -200,7 +201,7 @@ export const stateCreator: StateCreator<
               ...(accumulatedReasoning
                 ? { reasoning_content: accumulatedReasoning }
                 : {}),
-            } as any)
+            })
             get().agent.setLoading(false)
             break
           }
@@ -214,10 +215,10 @@ export const stateCreator: StateCreator<
                 ? { reasoning_content: accumulatedReasoning }
                 : {}),
               tool_calls: finalToolCalls,
-            } as any)
+            })
 
             let shouldStopLoop = false
-            const toolResultMessages: any[] = []
+            const toolResultMessages: ModelMessage[] = []
 
             for (const tc of finalToolCalls) {
               if (tc.type !== 'function') continue
@@ -230,7 +231,7 @@ export const stateCreator: StateCreator<
 
               if (shouldStopLoop) {
                 toolResultMessages.push({
-                  role: 'tool' as any,
+                  role: 'tool',
                   tool_call_id: tc.id,
                   content: JSON.stringify({ error: 'Cancelled: user disagreed with a previous action' }),
                 })
@@ -276,7 +277,7 @@ export const stateCreator: StateCreator<
 
               if (shouldStopLoop) {
                 toolResultMessages.push({
-                  role: 'tool' as any,
+                  role: 'tool',
                   tool_call_id: tc.id,
                   content: JSON.stringify({ error: 'Action rejected by user' }),
                 })
@@ -290,7 +291,7 @@ export const stateCreator: StateCreator<
                 content: {
                   toolCallId: tc.id,
                   toolName: tc.function.name,
-                  name: tc.function.name as any,
+                  name: tc.function.name,
                   input: bridge.input,
                   state: 'done' as const,
                   returnDisplay: toolResponse.returnDisplay,
@@ -299,14 +300,14 @@ export const stateCreator: StateCreator<
               })
 
               toolResultMessages.push({
-                role: 'tool' as any,
+                role: 'tool',
                 tool_call_id: tc.id,
                 content: JSON.stringify(toolResponse.payload),
               })
             }
 
             if (toolResultMessages.length > 0) {
-              agent.appendMessage(toolResultMessages as any)
+              agent.appendMessage(toolResultMessages)
             }
 
             if (shouldStopLoop) {
