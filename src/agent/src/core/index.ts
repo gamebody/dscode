@@ -96,6 +96,7 @@ export default class Core<TContext = Record<string, any>> {
   private abortSignal?: AbortSignal
   private thinkingMode: 'off' | 'high' | 'max'
   private sessionId: string
+  private logsDir?: string
   private client: OpenAI
   private onSessionRefresh?: () => void
   private context: TContext
@@ -117,6 +118,8 @@ export default class Core<TContext = Record<string, any>> {
     this.context = config?.context ?? {} as TContext
 
     this.sessionId = this.createSessionId()
+
+    this.logsDir = config?.logsDir
 
     if (config?.logsDir) {
       this.logger = new MessageLogger(config.logsDir, this.sessionId)
@@ -143,6 +146,13 @@ export default class Core<TContext = Record<string, any>> {
 
   getSessionId() {
     return this.sessionId
+  }
+
+  setSessionId(sessionId: string) {
+    this.sessionId = sessionId
+    if (this.logsDir) {
+      this.logger = new MessageLogger(this.logsDir, sessionId)
+    }
   }
 
   refreshSessionId() {

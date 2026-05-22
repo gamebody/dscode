@@ -30,7 +30,6 @@ export type Tool = {
   role: 'tool',
   content: {
     toolCallId: string
-    toolName: string
     state: 'loading' | 'done'
     returnDisplay?: ReturnDisplay
   } & Tools

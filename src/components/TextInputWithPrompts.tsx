@@ -1,5 +1,5 @@
 
-import React, { memo, useEffect, useId, useRef, useState } from "react";
+import React, { memo, useEffect, useId, useRef, useState, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "./InkTextInput";
 import { SuggestionsSelect, type SuggestionsSelectItem } from "./SuggestionsSelect";
@@ -11,6 +11,8 @@ import ModelSelect from "./ModelSelect";
 import { commandRegistry } from "../commands/index";
 import { fuzzySearchFiles, extractFileSearchTerm, replaceFileSearchTerm, FileSearchResult } from "../utils/fileSearch";
 import resolveAtReferences from "../utils/resolveAtReferences";
+import { useLatest } from "../hooks/useLatest";
+import { SessionManager } from "../session/SessionManager";
 
 
 export type TextInputWithPromptsProps = {
@@ -23,8 +25,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const [showModelSelect, setShowModelSelect] = useState(false)
   const [isFileSearch, setIsFileSearch] = useState(false)
   const [fileSearchTerm, setFileSearchTerm] = useState('')
-
-  const visibleRef = useRef(visible)
 
   const [items, setItems] = useState<SuggestionsSelectItem<string>[]>(() => {
     const commands = commandRegistry.getAllCommands();
@@ -43,6 +43,10 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
   const isPedning = useStoreContext(s => s.bar.isPending)
   const isUserDecison = useStoreContext(s => s.bar.isUserDecison)
+  const isResumeMode = useStoreContext(s => s.bar.isResumeMode)
+  const resumeInputText = useStoreContext(s => s.bar.resumeInputText)
+
+  const latestRef = useLatest({ isResumeMode, visible })
 
 
   const modelConfig = useStoreContext(s => s.userConfig.modelConfig)
@@ -64,6 +68,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const barReset = useStoreContext(s => s.bar.reset)
   const setExitConfirmState = useStoreContext(s => s.bar.setExitConfirmState)
   const setIsStatusBarVisible = useStoreContext(s => s.bar.setIsStatusBarVisible)
+  const setResumeMode = useStoreContext(s => s.bar.setResumeMode)
 
 
 
@@ -77,6 +82,31 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
 
   const refreshStaticKey = useStoreContext(s => s.history.refreshStaticKey)
+
+  const logsDir = useStoreContext(s => s.base.logs)
+  const sessionMgr = useMemo(() => new SessionManager(logsDir), [logsDir])
+
+  const restoreSession = async (filePath: string, sessionId: string) => {
+    const parsed = await sessionMgr.loadSession(filePath)
+    const agent = codeAgent(
+      { cwd: base.cwd, productName: base.productName, todosDir: base.todosDir },
+      {
+        model: modelConfig.apiKey && modelConfig.baseURL && modelConfig.model
+          ? { name: modelConfig.model, apiKey: modelConfig.apiKey, baseURL: modelConfig.baseURL }
+          : undefined,
+        thinkingMode,
+        logsDir: base.logs,
+      },
+    )
+    agent.setSessionId(parsed.sessionId)
+    setSessionId(parsed.sessionId)
+    agent.appendMessage(parsed.messages, false)
+    setAgent(agent)
+    setUIMessage(parsed.uiMessages)
+    setSessionApproved(false)
+    refreshStaticKey()
+    setResumeMode(false)
+  }
 
 
 
@@ -140,7 +170,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
 
   useEffect(() => {
-    visibleRef.current = visible
     if (!visible) {
       const commands = commandRegistry.getAllCommands();
       setItems(commands.map(cmd => ({
@@ -159,8 +188,18 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
   }, [])
 
+  // 监听 ResumeFlow 设置的输入文本
+  useEffect(() => {
+    if (resumeInputText !== null) {
+      setText(resumeInputText)
+      inputRef.current?.setCursorOffset(resumeInputText.length)
+    }
+  }, [resumeInputText])
+
   // ESC 按键监听，用于取消当前操作
   useInput((input, key) => {
+    const latest = latestRef.current
+
     if (key.escape) {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
@@ -177,7 +216,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
     
     // Tab 键处理：当有可见建议时，选择第一个建议
-    if (key.tab && visibleRef.current && items.length > 0) {
+    if (key.tab && latest.visible && items.length > 0) {
       const firstItem = items[0];
       if (isFileSearch) {
         // 文件搜索模式：替换@搜索词为完整路径
@@ -201,15 +240,15 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
       }
     }
 
-    // 上下箭头浏览历史（仅在建议列表不可见时使用）
-    if (key.upArrow && !visibleRef.current) {
+    // 上下箭头浏览历史（仅在建议列表不可见且非恢复模式时使用）
+    if (key.upArrow && !latest.visible && !latest.isResumeMode) {
       const historyText = navigateUp()
       if (historyText !== null) {
         setText(historyText)
         setVisible(false)
         inputRef.current?.setCursorOffset(historyText.length)
       }
-    } else if (key.downArrow && !visibleRef.current) {
+    } else if (key.downArrow && !latest.visible && !latest.isResumeMode) {
       const historyText = navigateDown()
       if (historyText !== null) {
         setText(historyText)
@@ -251,6 +290,9 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     },
     setExitConfirmState,
     setIsStatusBarVisible,
+    setResumeMode,
+    sessionMgr,
+    restoreSession,
   };
 
   return (
@@ -276,13 +318,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                 }
                 resetNavigation()
 
-                // 特殊处理 /liuyun 命令
-                if (submitText === '/liuyun') {
-                  useDefaultModel()
-                  setText('')
-                  return
-                }
-
                 const isCommand = await commandRegistry.executeCommand(submitText, context);
                 
                 if (!isCommand) {
@@ -298,6 +333,15 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                 setText(value)
                 setVisible(false)
                 setIsFileSearch(false)
+
+                if (latestRef.current.isResumeMode && !value.startsWith('/resume ')) {
+                  setResumeMode(false)
+                }
+
+                if (value === '/resume ' && !latestRef.current.isResumeMode) {
+                  setResumeMode(true)
+                  return
+                }
 
                 // 检查是否有@文件搜索
                 let searchTerm = extractFileSearchTerm(value)
@@ -353,6 +397,11 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                   setText(newText)
                   setVisible(false)
                   inputRef.current.setCursorOffset(newText.length)
+
+                  if (newText === '/resume ') {
+                    setResumeMode(true)
+                    return
+                  }
                 }
               }}
               onHighlight={(value) => {
@@ -378,7 +427,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
           />
         )
       }
-      <StatusBar />
     </Box>
   );
 };

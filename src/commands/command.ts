@@ -1,6 +1,8 @@
 import { ModelMessage } from "../agent";
 import { UIMessage } from "../store/agent";
 import { Base } from "../store/index";
+import { SessionManager } from "../session/SessionManager";
+import { codeAgent } from "../agent";
 
 export interface CommandContext {
   setText: (text: string) => void;
@@ -15,6 +17,9 @@ export interface CommandContext {
   clear: () => void;
   setExitConfirmState: (state: 'idle' | 'confirming' | 'exiting') => void;
   setIsStatusBarVisible: (visible: boolean) => void;
+  setResumeMode: (mode: boolean) => void;
+  sessionMgr: SessionManager;
+  restoreSession: (filePath: string, sessionId: string) => Promise<void>;
 }
 
 export interface Command {

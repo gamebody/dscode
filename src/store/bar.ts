@@ -24,6 +24,10 @@ type State = {
   thinkingMode: 'off' | 'high' | 'max'
   /** Agent 模式: agent 标准模式 | yolo 自动执行模式 */
   agentMode: 'agent' | 'yolo'
+  /** 会话恢复模式 */
+  isResumeMode: boolean
+  /** ResumeFlow 选中时设置的输入文本，供 TextInputWithPrompts 读取 */
+  resumeInputText: string | null
 }
 
 type Action = {
@@ -46,6 +50,10 @@ type Action = {
   setAgentMode: (mode: 'agent' | 'yolo') => void
   /** 切换 Agent 模式: agent <-> yolo */
   cycleAgentMode: () => void
+  /** 设置会话恢复模式 */
+  setResumeMode: (mode: boolean) => void
+  /** 设置 ResumeFlow 选中时的输入文本 */
+  setResumeInputText: (text: string | null) => void
   reset: () => void
 }
 
@@ -66,6 +74,8 @@ const initialValues: State = {
   isStatusBarVisible: true,
   thinkingMode: 'max',
   agentMode: 'agent',
+  isResumeMode: false,
+  resumeInputText: null,
 }
 
 
@@ -167,6 +177,20 @@ export const stateCreator: StateCreator<
       set((state: Store) => {
         return produce(state, (draft) => {
           draft.bar.agentMode = draft.bar.agentMode === 'agent' ? 'yolo' : 'agent'
+        })
+      })
+    },
+    setResumeMode(mode: boolean) {
+      set((state: Store) => {
+        return produce(state, (draft) => {
+          draft.bar.isResumeMode = mode
+        })
+      })
+    },
+    setResumeInputText(text: string | null) {
+      set((state: Store) => {
+        return produce(state, (draft) => {
+          draft.bar.resumeInputText = text
         })
       })
     },

@@ -1,28 +1,48 @@
 
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 const TERMINAL_PADDING_X = 8;
 
-export function useTerminalSize(): { columns: number; rows: number } {
-  const [size, setSize] = useState({
+type TerminalSize = { columns: number; rows: number };
+
+let cachedSize: TerminalSize = {
+  columns: (process.stdout.columns || 60) - TERMINAL_PADDING_X,
+  rows: process.stdout.rows || 20,
+};
+
+const listeners = new Set<() => void>();
+let resizeHandlerRegistered = false;
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+  if (!resizeHandlerRegistered) {
+    resizeHandlerRegistered = true;
+    process.stdout.on('resize', handleResize);
+  }
+  return () => {
+    listeners.delete(callback);
+    if (listeners.size === 0 && resizeHandlerRegistered) {
+      process.stdout.off('resize', handleResize);
+      resizeHandlerRegistered = false;
+    }
+  };
+}
+
+function getSnapshot(): TerminalSize {
+  return cachedSize;
+}
+
+function handleResize() {
+  cachedSize = {
     columns: (process.stdout.columns || 60) - TERMINAL_PADDING_X,
     rows: process.stdout.rows || 20,
-  });
+  };
+  for (const listener of listeners) {
+    listener();
+  }
+}
 
-  useEffect(() => {
-    function updateSize() {
-      setSize({
-        columns: (process.stdout.columns || 60) - TERMINAL_PADDING_X,
-        rows: process.stdout.rows || 20,
-      });
-    }
-
-    process.stdout.on('resize', updateSize);
-    return () => {
-      process.stdout.off('resize', updateSize);
-    };
-  }, []);
-
-  return size;
+export function useTerminalSize(): TerminalSize {
+  return useSyncExternalStore(subscribe, getSnapshot);
 }

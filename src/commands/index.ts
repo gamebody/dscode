@@ -9,6 +9,7 @@ import { ONEoneWritePlanCommand } from './build-in/onewrite-plan';
 import { ONEExecutePlanCommand } from './build-in/oneexecute-plan';
 import { InitCommand } from './build-in/init';
 import { HelpCommand } from './build-in/help';
+import { ResumeCommand } from './build-in/resume';
 
 
 export class CommandRegistry {
@@ -29,6 +30,7 @@ export class CommandRegistry {
     this.register(new ONESaveDesignCommand());
     this.register(new ONEoneWritePlanCommand());
     this.register(new ONEExecutePlanCommand());
+    this.register(new ResumeCommand());
   }
   
   register(command: Command) {
