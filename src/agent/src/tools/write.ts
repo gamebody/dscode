@@ -37,19 +37,32 @@ type Output = {
   llmContent: string;
 }
 
+function resolveWriteFilePath(filePath: string, cwd: string): string {
+  return path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
+}
+function formatContent(content: string): string {
+  if (!content.endsWith('\n')) {
+    return content + '\n';
+  }
+  return content;
+}
+
 export const writeExecutor = async (input: Input, context: CodeAgentContext) => {
   const { file_path, content } = input;
   try {
-    const fullFilePath = path.isAbsolute(file_path)
-      ? file_path
-      : path.resolve(context.cwd, file_path);
+    const fullFilePath = resolveWriteFilePath(file_path, context.cwd);
+
+    // Check if file exists and read old content (using fs)
     const oldFileExists = fs.existsSync(fullFilePath);
     const oldContent = oldFileExists
       ? fs.readFileSync(fullFilePath, 'utf-8')
       : '';
+
+    // Create directory and write file (using fs)
     const dir = path.dirname(fullFilePath);
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(fullFilePath, format(content));
+    fs.writeFileSync(fullFilePath, formatContent(content));
+
     return {
       type: "tool-result" as const,
       returnDisplay: {
