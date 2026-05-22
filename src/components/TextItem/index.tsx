@@ -127,23 +127,8 @@ const ThinkingBlock: React.FC<{
   );
 };
 
-const TOOL_INPUT_EXTRACTORS: Record<string, (input: any) => string> = {
-  read: (input) => input.file_path,
-  ls: (input) => input.dir_path,
-  glob: (input) => input.path || input.pattern,
-  edit: (input) => input.file_path,
-  write: (input) => input.file_path,
-};
-
 const renderTool = (tool: Tool["content"]): ReactElement => {
-  const extractor = TOOL_INPUT_EXTRACTORS[tool.name];
   const returnDisplay: ReturnDisplay | undefined = tool.returnDisplay;
-
-  if (typeof returnDisplay === "string" && extractor) {
-    return (
-      <ToolDisplay name={tool.name} input={extractor(tool.input)} output={returnDisplay} />
-    );
-  }
 
   if (typeof returnDisplay === "object" && returnDisplay !== null) {
     const toolInput = tool.input as Record<string, unknown> | null;
@@ -204,7 +189,7 @@ const renderTool = (tool: Tool["content"]): ReactElement => {
     <ToolDisplay
       name={tool.name}
       input={JSON.stringify(tool.input)}
-      output={JSON.stringify(tool.output)}
+      output={tool.returnDisplay as string || "No return display"}
     />
   );
 };
