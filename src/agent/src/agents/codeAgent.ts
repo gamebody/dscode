@@ -1,16 +1,16 @@
 import Core, { type ModelConfig } from "../core/index.js";
-import { lsExecutor, lsTool } from "../tools/ls.js";
-import { readExecutor, readTool } from "../tools/read.js";
-import { writeExecutor, writeTool } from "../tools/write.js";
-import { globExecutor, globTool, GlobTool } from "../tools/glob.js";
-import { editExecutor, editTool } from "../tools/edit.js";
-import { createTodoTool } from "../tools/todo.js";
-import { bashExecutor, bashTool } from "../tools/bash.js";
+import { lsToolSchema, lsExecutor } from "../tools/ls.js";
+import { readToolSchema, readExecutor } from "../tools/read.js";
+import { writeToolSchema, writeExecutor } from "../tools/write.js";
+import { globToolSchema, globExecutor } from "../tools/glob.js";
+import { editToolSchema, editExecutor } from "../tools/edit.js";
+import { createTodoTool, todoWriteToolSchema, todoReadToolSchema } from "../tools/todo.js";
+import { bashToolSchema, bashExecutor } from "../tools/bash.js";
 import path from "path";
 import { generateSystemPrompt } from "../prompts/codeAgentSystem.js";
-import { askUserQuestionExecutor, askUserQuestionTool } from "../tools/askUserQuestion.js";
+import { askUserQuestionToolSchema, askUserQuestionExecutor } from "../tools/askUserQuestion.js";
 import { readProjectSummary } from "../../../utils/projectContext.js";
-import { skillExecutor, skillToolDef } from "../tools/skill.js";
+import { skillToolSchema, skillExecutor } from "../tools/skill.js";
 import { SkillsManager } from "../../../skills/index.js";
 
 
@@ -28,7 +28,7 @@ export interface CodeAgentContext {
 }
 
 export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal, thinkingMode?: 'off' | 'high' | 'max', logsDir?: string) {
-    
+
   const agent = new Core({
     model: model,
     logsDir: logsDir,
@@ -56,52 +56,42 @@ export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal
 
       const filePath = path.join(context.todosDir, `${agent.getSessionId()}.json`)
       const {
-        todoReadTool,
         todoReadExecutor,
-        todoWriteTool,
         todoWriteExecutor,
       } = createTodoTool({ filePath: filePath })
 
-      agent.registerTool('todoRead', todoReadTool)
+      agent.registerTool('todoRead', todoReadToolSchema)
       agent.registerToolExecutor('todoRead', todoReadExecutor)
 
-      agent.registerTool('todoWrite', todoWriteTool)
+      agent.registerTool('todoWrite', todoWriteToolSchema)
       agent.registerToolExecutor('todoWrite', todoWriteExecutor)
     },
   })
 
-  agent.registerTool('ls', lsTool)
+  agent.registerTool('ls', lsToolSchema)
   agent.registerToolExecutor('ls', lsExecutor)
 
-  agent.registerTool('read', readTool)
+  agent.registerTool('read', readToolSchema)
   agent.registerToolExecutor('read', readExecutor)
 
-  agent.registerTool('write', writeTool)
+  agent.registerTool('write', writeToolSchema)
   agent.registerToolExecutor('write', writeExecutor)
 
 
-  agent.registerTool('glob', globTool)
+  agent.registerTool('glob', globToolSchema)
   agent.registerToolExecutor('glob', globExecutor)
 
-  agent.registerTool('edit', editTool)
+  agent.registerTool('edit', editToolSchema)
   agent.registerToolExecutor('edit', editExecutor)
 
-  agent.registerTool('bash', bashTool)
+  agent.registerTool('bash', bashToolSchema)
   agent.registerToolExecutor('bash', bashExecutor)
 
-  agent.registerTool('askUserQuestion', askUserQuestionTool)
+  agent.registerTool('askUserQuestion', askUserQuestionToolSchema)
   agent.registerToolExecutor('askUserQuestion', askUserQuestionExecutor)
 
-  agent.registerTool('skill', skillToolDef)
+  agent.registerTool('skill', skillToolSchema)
   agent.registerToolExecutor('skill', skillExecutor)
 
   return agent
 }
-
-
-
-
-
-
-
-

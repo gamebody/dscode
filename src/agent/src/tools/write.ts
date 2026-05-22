@@ -1,22 +1,43 @@
-import { tool } from "ai";
-import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { ApprovalCategory } from "../utils/constants.js";
+import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const description = `Write a file to the local filesystem`;
+const toolName = 'write';
 
-const inputSchema = z.object({
-  file_path: z.string(),
-  content: z.string(),
-});
+export const writeToolSchema: ChatCompletionFunctionTool = {
+  type: "function",
+  function: {
+    name: toolName,
+    description: "Write a file to the local filesystem",
+    parameters: {
+      type: "object",
+      properties: {
+        file_path: {
+          type: "string",
+          description: "The absolute path to the file to write",
+        },
+        content: {
+          type: "string",
+          description: "The content to write to the file",
+        },
+      },
+      required: ["file_path", "content"],
+    },
+  },
+};
 
-const outputSchema = z.object({
-  llmContent: z.string().describe("LLM output"),
-});
+type Input = {
+  file_path: string;
+  content: string;
+}
 
-export const writeExecutor = async (input: z.infer<typeof inputSchema>, context: CodeAgentContext) => {
+type Output = {
+  llmContent: string;
+}
+
+export const writeExecutor = async (input: Input, context: CodeAgentContext) => {
   const { file_path, content } = input;
   try {
     const fullFilePath = path.isAbsolute(file_path)
@@ -26,8 +47,6 @@ export const writeExecutor = async (input: z.infer<typeof inputSchema>, context:
     const oldContent = oldFileExists
       ? fs.readFileSync(fullFilePath, 'utf-8')
       : '';
-    // TODO: backup old content
-    // TODO: let user know if they want to write to a file that already exists
     const dir = path.dirname(fullFilePath);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(fullFilePath, format(content));
@@ -60,20 +79,11 @@ writeExecutor.approval = {
   category: ApprovalCategory.WRITE,
 }
 
-export const writeTool = tool({
-  name: "write",
-  description,
-  inputSchema,
-  outputSchema,
-});
-
 export type WriteTool = {
   name: 'write',
-  input: z.infer<typeof inputSchema>,
-  output: z.infer<typeof outputSchema>,
+  input: Input,
+  output: Output,
 }
-
-
 
 function format(content: string) {
   if (!content.endsWith('\n')) {
@@ -81,5 +91,3 @@ function format(content: string) {
   }
   return content;
 }
-
-

@@ -1,9 +1,9 @@
-import { tool } from 'ai';
 import fs from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'pathe';
 import { z } from 'zod';
 import { ApprovalCategory } from '../utils/constants.js';
+import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
 const TODO_WRITE_PROMPT = `
 Use this tool to create and manage a structured task list for your current coding session. This helps you track progress, organize complex tasks, and demonstrate thoroughness to the user.
@@ -183,7 +183,9 @@ The assistant did not use the todo list because this is a single command executi
 When in doubt, use this tool. Being proactive with task management demonstrates attentiveness and ensures you complete all requirements successfully.
 `;
 
-const TODO_READ_PROMPT = `Use this tool to read your todo list`;
+const TODO_READ_PROMPT = `Use this tool to read the current todo list. You can use this tool to:
+1. Check the current state of the todo list
+2. Verify which tasks are completed, in progress, or pending`;
 
 const TodoItemSchema = z.object({
   id: z.string(),
@@ -198,20 +200,72 @@ type TodoList = z.infer<typeof TodoListSchema>;
 
 export type TodoItem = z.infer<typeof TodoItemSchema>;
 
-const todoWriteInputSchema = z.object({
-  todos: TodoListSchema.describe('The updated todo list'),
-});
+export const todoWriteToolSchema: ChatCompletionFunctionTool = {
+  type: "function",
+  function: {
+    name: "todoWrite",
+    description: TODO_WRITE_PROMPT,
+    parameters: {
+      type: "object",
+      properties: {
+        todos: {
+          type: "array",
+          description: "The updated todo list",
+          items: {
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                description: "Unique identifier for the todo item",
+              },
+              content: {
+                type: "string",
+                minLength: 1,
+                description: "The task description",
+              },
+              status: {
+                type: "string",
+                enum: ["pending", "in_progress", "completed"],
+                description: "The status of the task",
+              },
+              priority: {
+                type: "string",
+                enum: ["low", "medium", "high"],
+                description: "The priority of the task",
+              },
+            },
+            required: ["id", "content", "status", "priority"],
+          },
+        },
+      },
+      required: ["todos"],
+    },
+  },
+};
 
-const todoReadInputSchema = z.object({}).passthrough()
+export const todoReadToolSchema: ChatCompletionFunctionTool = {
+  type: "function",
+  function: {
+    name: "todoRead",
+    description: TODO_READ_PROMPT,
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+};
 
+type TodoWriteInput = {
+  todos: TodoList;
+}
 
-const todoWriteOutputSchema = z.object({
-  llmContent: z.string().describe("LLM output"),
-});
+type TodoWriteOutput = {
+  llmContent: string;
+}
 
-const todoReadOutputSchema = z.object({
-  llmContent: z.string().describe("LLM output"),
-});
+type TodoReadOutput = {
+  llmContent: string;
+}
 
 async function loadTodosFromFile(filePath: string) {
   if (!fs.existsSync(filePath)) return [];
@@ -248,15 +302,7 @@ export function createTodoTool(opts: { filePath: string }) {
     return await loadTodosFromFile(getTodoFilePath());
   }
 
-
-  const todoWriteTool = tool({
-    name: 'todoWrite',
-    description: TODO_WRITE_PROMPT,
-    inputSchema: todoWriteInputSchema,
-    outputSchema: todoWriteOutputSchema,
-  });
-
-  const todoWriteExecutor = async ({ todos }: z.infer<typeof todoWriteInputSchema>) => {
+  const todoWriteExecutor = async ({ todos }: TodoWriteInput) => {
     try {
       const oldTodos = await readTodos();
       const newTodos = todos;
@@ -285,14 +331,6 @@ export function createTodoTool(opts: { filePath: string }) {
   todoWriteExecutor.approval = {
     category: ApprovalCategory.READ,
   }
-
-
-  const todoReadTool = tool({
-    name: 'todoRead',
-    description: TODO_READ_PROMPT,
-    inputSchema: todoReadInputSchema,
-    outputSchema: todoReadOutputSchema,
-  });
 
   const todoReadExecutor = async () => {
     try {
@@ -325,28 +363,19 @@ export function createTodoTool(opts: { filePath: string }) {
   }
 
   return {
-    todoWriteTool,
     todoWriteExecutor,
-    todoReadTool,
     todoReadExecutor,
   };
 }
 
-
 export type TodoWriteTool = {
   name: 'todoWrite',
-  input: z.infer<typeof todoWriteInputSchema>,
-  output: z.infer<typeof todoWriteOutputSchema>,
+  input: TodoWriteInput,
+  output: TodoWriteOutput,
 }
 
 export type TodoReadTool = {
   name: 'todoRead',
-  input: z.infer<typeof todoReadInputSchema>,
-  output: z.infer<typeof todoReadOutputSchema>,
+  input: null,
+  output: TodoReadOutput,
 }
-
-
-
-
-
-

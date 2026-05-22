@@ -6,9 +6,9 @@ import { CHAT_MODEL_ID, provider } from "../utils/model.js";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { ApprovalCategory } from "../utils/constants.js";
 import OpenAI from 'openai';
-import { openaiTools } from "../tools/openai-tools.js";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { MessageLogger } from "../../../logger/index.js";
+import type { ChatCompletionTool } from "openai/resources/chat/completions";
 
 
 export type ModelConfig = {
@@ -188,6 +188,10 @@ export default class Core {
     this.toolExecutors[toolName] = executor
   }
 
+  private getTools(): ChatCompletionTool[] {
+    return Object.values(this.tools) as any as ChatCompletionTool[]
+  }
+
   appendMessage(message: ModelMessage | ModelMessage[], log = true) {
     if (Array.isArray(message)) {
       this.messages.push(...message)
@@ -250,14 +254,14 @@ export default class Core {
         {
           model: this.modelName,
           messages: requestMessages,
-          tools: openaiTools,
+          tools: this.getTools(),
           ...(thinkingParam ?? {}),
         },
         {
           body: {
             model: this.modelName,
             messages: requestMessages,
-            tools: openaiTools,
+            tools: this.getTools(),
             ...(thinkingParam ?? {}),
           },
         },
@@ -362,7 +366,7 @@ export default class Core {
         {
           model: this.modelName,
           messages: requestMessages,
-          tools: openaiTools,
+          tools: this.getTools(),
           stream: true,
           stream_options: { include_usage: true },
           ...(thinkingParam ?? {}),
@@ -372,7 +376,7 @@ export default class Core {
           body: {
             model: this.modelName,
             messages: requestMessages,
-            tools: openaiTools,
+            tools: this.getTools(),
             stream: true,
             stream_options: { include_usage: true },
             ...(thinkingParam ?? {}),

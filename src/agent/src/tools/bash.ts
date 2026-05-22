@@ -1,13 +1,17 @@
-import { tool } from "ai";
-import { z } from "zod";
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { ApprovalCategory } from "../utils/constants.js";
+import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
 const execAsync = promisify(exec);
+const toolName = 'bash';
 
-const description = `Run shell commands in the terminal, ensuring proper handling and security measures.
+export const bashToolSchema: ChatCompletionFunctionTool = {
+  type: "function",
+  function: {
+    name: toolName,
+    description: `Run shell commands in the terminal, ensuring proper handling and security measures.
 
 Background Execution:
 - Set run_in_background=true to force background execution
@@ -36,39 +40,53 @@ cd /foo/bar && pytest tests
 </bad-example>
 <bad-example>
 <command>pytest /foo/bar/tests</command>
-</bad-example>`;
+</bad-example>`,
+    parameters: {
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          description: "The command to execute",
+        },
+        timeout: {
+          type: "number",
+          description: "Optional timeout in milliseconds (max 600000)",
+          nullable: true,
+        },
+        run_in_background: {
+          type: "boolean",
+          description: "Set to true to run this command in the background. Use bash_output to read output later.",
+        },
+      },
+      required: ["command"],
+    },
+  },
+};
 
-const inputSchema = z.object({
-  command: z.string().describe("The command to execute"),
-  timeout: z
-    .number()
-    .optional()
-    .nullable()
-    .describe("Optional timeout in milliseconds (max 600000)"),
-  run_in_background: z
-    .boolean()
-    .optional()
-    .describe("Set to true to run this command in the background. Use bash_output to read output later."),
-});
+type Input = {
+  command: string;
+  timeout?: number | null;
+  run_in_background?: boolean;
+}
 
-const outputSchema = z.object({
-  llmContent: z.string().describe("The output of the command"),
-});
+type Output = {
+  llmContent: string;
+}
 
 const BANNED_COMMANDS = new Set([
-  "alias", "aria2c", "axel", "bash", "chrome", "curl", "curlie", "eval", 
-  "firefox", "fish", "http-prompt", "httpie", "links", "lynx", "nc", 
+  "alias", "aria2c", "axel", "bash", "chrome", "curl", "curlie", "eval",
+  "firefox", "fish", "http-prompt", "httpie", "links", "lynx", "nc",
   "rm", "safari", "sh", "source", "telnet", "w3m", "wget", "xh", "zsh"
 ]);
 
 function isCommandBanned(command: string): boolean {
-  const firstWord = command.trim().split(/\s+/)[0];
+  const firstWord = command.trim().split(/\s+/)[0]!;
   return BANNED_COMMANDS.has(firstWord);
 }
 
-export const bashExecutor = async (input: z.infer<typeof inputSchema>, context: CodeAgentContext) => {
+export const bashExecutor = async (input: Input, context: CodeAgentContext) => {
   const { command, timeout, run_in_background } = input;
-  
+
   try {
     if (!command || command.trim() === "") {
       throw new Error("Command cannot be empty");
@@ -80,15 +98,14 @@ export const bashExecutor = async (input: z.infer<typeof inputSchema>, context: 
 
     const options: any = {
       cwd: context.cwd,
-      timeout: timeout ? timeout : 30 * 60 * 1000, // 30 minutes default
-      maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      timeout: timeout ? timeout : 30 * 60 * 1000,
+      maxBuffer: 1024 * 1024 * 10,
     };
 
     if (run_in_background) {
       const taskId = `bash_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const childProcess = exec(command, options);
-      
-      // Store the process in context for later retrieval
+
       if (!context.backgroundTasks) {
         context.backgroundTasks = {};
       }
@@ -107,11 +124,11 @@ export const bashExecutor = async (input: z.infer<typeof inputSchema>, context: 
       };
     } else {
       const { stdout, stderr } = await execAsync(command, options);
-      
+
       let output = "";
       if (stdout) output += stdout;
       if (stderr) output += (output ? "\n" : "") + stderr;
-      
+
       return {
         type: "tool-result" as const,
         returnDisplay: `Command executed successfully`,
@@ -136,15 +153,8 @@ bashExecutor.approval = {
   category: ApprovalCategory.COMMAND,
 }
 
-export const bashTool = tool({
-  name: "bash",
-  description,
-  inputSchema,
-  outputSchema,
-});
-
 export type BashTool = {
   name: 'bash',
-  input: z.infer<typeof inputSchema>,
-  output: z.infer<typeof outputSchema>,
+  input: Input,
+  output: Output,
 }

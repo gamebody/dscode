@@ -1,21 +1,40 @@
-import { tool } from "ai";
-import { z } from "zod";
 import path from "path";
 import { createFileTree, listDirectory, MAX_FILES, printTree, TRUNCATED_MESSAGE } from "../utils/list.js";
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { ApprovalCategory } from "../utils/constants.js";
+import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const description = `Use this tool to list files and directories in a given path.`;
+const toolName = 'ls';
 
-const inputSchema = z.object({
-  dir_path: z.string().describe("The path to the directory to list."),
-});
+export const lsToolSchema: ChatCompletionFunctionTool = {
+  type: "function",
+  function: {
+    name: toolName,
+    description:
+      "Use this tool to list files and directories in a given path.",
+    parameters: {
+      type: "object",
+      properties: {
+        dir_path: {
+          type: "string",
+          description: "The path to the directory to list.",
+        },
+      },
+      required: ["dir_path"],
+    },
+  },
+};
 
-const outputSchema = z.object({
-  llmContent: z.string().describe("List of files and directories"),
-});
 
-export const lsExecutor = async (input: z.infer<typeof inputSchema>, context: CodeAgentContext) => {
+type Input = {
+  dir_path: string;
+}
+
+type Output = {
+  llmContent: string;
+}
+
+export const lsExecutor = async (input: Input, context: CodeAgentContext) => {
   const { dir_path } = input;
   try {
       const fullFilePath = path.isAbsolute(dir_path)
@@ -62,15 +81,8 @@ lsExecutor.approval = {
   category: ApprovalCategory.READ,
 }
 
-export const lsTool = tool({
-  name: "ls",
-  description,
-  inputSchema,
-  outputSchema,
-});
-
 export type LsTool = {
   name: 'ls',
-  input: z.infer<typeof inputSchema>,
-  output: z.infer<typeof outputSchema>,
+  input: Input,
+  output: Output,
 }

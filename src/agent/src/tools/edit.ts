@@ -1,42 +1,62 @@
-import { tool } from "ai";
-import { z } from "zod";
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import path from 'pathe';
 import fs from 'fs';
 import { applyEdits } from "../utils/applyEdit.js";
 import { ApprovalCategory } from "../utils/constants.js";
+import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
+const toolName = 'edit';
 
-
-const description = `Edit files in the local filesystem.
+export const editToolSchema: ChatCompletionFunctionTool = {
+  type: "function",
+  function: {
+    name: toolName,
+    description: `Edit files in the local filesystem.
 Usage:
 - You must use your read tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file.
 - When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the old_string or new_string.
 - For moving or renaming files, you should generally use the Bash tool with the 'mv' command instead.
 - For larger edits, use the Write tool to overwrite files.
 - For file creation, use the Write tool.
-- When making multiple file edits in a row to the same file, you should prefer to send all edits in a single message with multiple calls to this tool, rather than multiple messages with a single call each.
-`;
+- When making multiple file edits in a row to the same file, you should prefer to send all edits in a single message with multiple calls to this tool, rather than multiple messages with a single call each.`,
+    parameters: {
+      type: "object",
+      properties: {
+        file_path: {
+          type: "string",
+          description: "The path of the file to modify",
+        },
+        old_string: {
+          type: "string",
+          description: "The text to replace",
+        },
+        new_string: {
+          type: "string",
+          description: "The text to replace the old_string with",
+        },
+        replace_all: {
+          type: "boolean",
+          description: "Whether to replace all occurrences of old_string with new_string",
+          default: false,
+        },
+      },
+      required: ["file_path", "old_string", "new_string"],
+    },
+  },
+};
 
-const inputSchema = z.object({
-  file_path: z.string().describe('The path of the file to modify'),
-  old_string: z.string().describe('The text to replace'),
-  new_string: z
-    .string()
-    .describe('The text to replace the old_string with'),
-  replace_all: z
-    .boolean()
-    .default(false)
-    .describe(
-      'Whether to replace all occurrences of old_string with new_string',
-    ),
-});
+type Input = {
+  file_path: string;
+  old_string: string;
+  new_string: string;
+  replace_all?: boolean;
+}
 
-const outputSchema = z.object({
-  llmContent: z.string().describe('The output of the tool'),
-});
+type Output = {
+  llmContent: string;
+}
 
-export const editExecutor = async (input: z.infer<typeof inputSchema>, context: CodeAgentContext) => {
+export const editExecutor = async (input: Input, context: CodeAgentContext) => {
   const { file_path, old_string, new_string, replace_all } = input;
   try {
     const cwd = context.cwd;
@@ -78,15 +98,8 @@ editExecutor.approval = {
   category: ApprovalCategory.WRITE,
 }
 
-export const editTool = tool({
-  name: "edit",
-  description,
-  inputSchema,
-  outputSchema,
-});
-
 export type EditTool = {
   name: 'edit',
-  input: z.infer<typeof inputSchema>,
-  output: z.infer<typeof outputSchema>,
+  input: Input,
+  output: Output,
 }

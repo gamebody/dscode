@@ -1,19 +1,35 @@
-import { tool } from "ai";
-import { z } from "zod";
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { SkillsManager } from "../../../skills/index.js";
 import { ApprovalCategory } from "../utils/constants.js";
+import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const description =
-  "Load the full content of a skill document. Skills provide reference information about specific technologies, frameworks, or tools. Use this when you need detailed guidance on a technology mentioned in the available skills list.";
+const toolName = 'skill';
 
-const inputSchema = z.object({
-  name: z.string().describe("The name of the skill to load (e.g., 'bun')"),
-});
+export const skillToolSchema: ChatCompletionFunctionTool = {
+  type: "function",
+  function: {
+    name: toolName,
+    description: "Load the full content of a skill document (.agents/skills/<name>/SKILL.md). Use this tool when you need detailed reference information about a specific technology, framework, or tool. The available skill names are listed in the system prompt.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "The name of the skill to load (e.g., 'bun', 'react'). Must match one of the available skill names listed in the system prompt.",
+        },
+      },
+      required: ["name"],
+    },
+  },
+};
 
-const outputSchema = z.object({
-  llmContent: z.string().describe("The full content of the skill document"),
-});
+type Input = {
+  name: string;
+}
+
+type Output = {
+  llmContent: string;
+}
 
 let skillsManager: SkillsManager | null = null;
 
@@ -25,7 +41,7 @@ function getSkillsManager(cwd: string): SkillsManager {
 }
 
 export const skillExecutor = async (
-  input: z.infer<typeof inputSchema>,
+  input: Input,
   context: CodeAgentContext,
 ) => {
   const { name } = input;
@@ -67,15 +83,8 @@ skillExecutor.approval = {
   category: ApprovalCategory.READ,
 };
 
-export const skillToolDef = tool({
-  name: "skill",
-  description,
-  inputSchema,
-  outputSchema,
-});
-
 export type SkillTool = {
   name: "skill";
-  input: z.infer<typeof inputSchema>;
-  output: z.infer<typeof outputSchema>;
+  input: Input;
+  output: Output;
 };
