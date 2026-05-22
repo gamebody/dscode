@@ -10,7 +10,6 @@ import { Store as configSlice, stateCreator as configStateCreator, } from './con
 import { Store as userConfigSlice, stateCreator as userConfigStateCreator, } from './userConfig'
 import { Store as approvalSlice, stateCreator as approvalStateCreator, } from './approval'
 import { Store as messageHistorySlice, stateCreator as messageHistoryStateCreator, } from './messageHistory'
-import { Store as buddySlice, buddyStateCreator, } from './buddy'
 import { isCLI } from '../utils/platform'
 import path from 'path'
 
@@ -38,8 +37,7 @@ export type StateActions =
   configSlice &
   userConfigSlice &
   approvalSlice &
-  messageHistorySlice &
-  buddySlice
+  messageHistorySlice
   
   
 const StoreContext = createContext<AppStore | null>(null)
@@ -55,14 +53,6 @@ export const createAppStore = (base: Base) => {
     const historyPath = path.join(base.storageDir, '.message-history.json')
     const data = JSON.parse(fs.readFileSync(historyPath, 'utf8'))
     if (Array.isArray(data.messages)) initialMessages = data.messages
-  } catch {}
-
-  const buddyPath = path.join(base.storageDir, 'buddy.json')
-  let initialLifetimeTokens = 0
-  try {
-    const fs = require('fs')
-    const data = JSON.parse(fs.readFileSync(buddyPath, 'utf8'))
-    if (typeof data.lifetimeTokens === 'number') initialLifetimeTokens = data.lifetimeTokens
   } catch {}
 
   const partialize = (state: StateActions) => ({
@@ -138,7 +128,6 @@ export const createAppStore = (base: Base) => {
         ...userConfigStateCreator(...a),
         ...approvalStateCreator(...a),
         ...messageHistoryStateCreator(initialMessages)(...a),
-        ...buddyStateCreator(buddyPath, initialLifetimeTokens)(...a),
       }),
       createStorageConfig()
     )

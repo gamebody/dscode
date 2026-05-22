@@ -15,10 +15,6 @@ export interface CommandContext {
   clear: () => void;
   setExitConfirmState: (state: 'idle' | 'confirming' | 'exiting') => void;
   setIsStatusBarVisible: (visible: boolean) => void;
-  buddy: {
-    lifetimeTokens: number;
-    getStage(): { fatness: number; size: number; stage: string };
-  };
 }
 
 export interface Command {

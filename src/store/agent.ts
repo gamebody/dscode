@@ -204,7 +204,6 @@ export const stateCreator: StateCreator<
           if (streamUsage?.total_tokens) {
             get().bar.setUsage(streamUsage.total_tokens)
             get().bar.setTotalUsage(streamUsage.total_tokens + get().bar.totalUsage)
-            get().buddy.addTokens(streamUsage.total_tokens)
           }
 
           // ---- process finish result ----
