@@ -6,6 +6,7 @@ import { Colors } from "../../utils/colors";
 import Gradient from "ink-gradient";
 import { MarkdownDisplay } from "../../utils/MarkdownDisplay";
 import { DiffViewer } from "../DiffViewer";
+import { TOOL_NAMES } from "../../agent/src/utils/constants";
 
 const MAX_VISIBLE_LINES = 3;
 
@@ -188,7 +189,7 @@ const renderTool = (tool: Tool["content"]): ReactElement => {
   return (
     <ToolDisplay
       name={tool.name}
-      input={JSON.stringify(tool.input)}
+      input={tool.name == TOOL_NAMES.ASK_USER_QUESTION ? '' : JSON.stringify(tool.input)}
       output={tool.returnDisplay as string || "No return display"}
     />
   );
