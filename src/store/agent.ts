@@ -320,14 +320,14 @@ export const stateCreator: StateCreator<
                   input: bridge.input,
                   state: 'done' as const,
                   returnDisplay: toolResponse.returnDisplay,
-                  output: toolResponse.payload,
+                  output: toolResponse.payload.llmContent,
                 }
               })
 
               const message = {
                 role: 'tool' as const,
                 tool_call_id: tc.id,
-                content: JSON.stringify(toolResponse.payload),
+                content: JSON.stringify(toolResponse.payload.llmContent),
               }
               toolResultMessages.push(message)
 
