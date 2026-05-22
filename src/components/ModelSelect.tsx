@@ -5,6 +5,7 @@ import { Colors } from "../utils/colors";
 import { RadioButtonSelect } from "./RadioButtonSelect";
 import modelConfigList from "../utils/modelConfig";
 import TextInput from "./InkTextInput";
+import { useLatest } from "../hooks/useLatest";
 
 export type ModelSelectProps = {
   onSubmit: () => void
@@ -25,28 +26,32 @@ const ModelSelect: React.FC<ModelSelectProps> = ({ onSubmit, onCancel }) => {
   const [apiKey, setApiKeyLocal] = useState(modelConfig.apiKey || '')
   const [selectedConfig, setSelectedConfig] = useState<typeof modelConfigList[0] | null>(null)
 
-  useInput((input, key) => {
+  const latest = useLatest({ step, selectedModel, apiKey, selectedConfig, onSubmit, onCancel })
+
+  useInput((_input, key) => {
+    const s = latest.current
+
     if (key.escape) {
-      if (step === 'model') {
-        onCancel()
-      } else if (step === 'apiKey') {
+      if (s.step === 'model') {
+        s.onCancel()
+      } else if (s.step === 'apiKey') {
         setStep('model')
-      } else if (step === 'confirm') {
+      } else if (s.step === 'confirm') {
         setStep('apiKey')
       }
     }
 
     if (key.return) {
-      if (step === 'model' && selectedConfig) {
+      if (s.step === 'model' && s.selectedConfig) {
         setStep('apiKey')
-      } else if (step === 'apiKey') {
+      } else if (s.step === 'apiKey') {
         setStep('confirm')
-      } else if (step === 'confirm') {
-        setModelName(selectedModel)
-        setApiKey(apiKey)
-        setBaseURL(selectedConfig?.baseURL || '')
-        setMaxTokens(selectedConfig?.maxTokens || 30000)
-        onSubmit()
+      } else if (s.step === 'confirm') {
+        setModelName(s.selectedModel)
+        setApiKey(s.apiKey)
+        setBaseURL(s.selectedConfig?.baseURL || '')
+        setMaxTokens(s.selectedConfig?.maxTokens || 30000)
+        s.onSubmit()
       }
     }
   });

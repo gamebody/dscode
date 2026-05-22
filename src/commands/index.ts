@@ -3,10 +3,10 @@ import { ModelCommand } from './build-in/model';
 import { NewCommand } from './build-in/new';
 import { Command, CommandContext } from './command';
 import { ConfigCommand } from './build-in/config';
-import { ONEDesignCommand } from './build-in/one:design';
-import { ONESaveDesignCommand } from './build-in/one:save-design';
-import { ONEoneWritePlanCommand } from './build-in/one:write-plan';
-import { ONEExecutePlanCommand } from './build-in/one:execute-plan';
+import { ONEDesignCommand } from './build-in/onedesign';
+import { ONESaveDesignCommand } from './build-in/onesave-design';
+import { ONEoneWritePlanCommand } from './build-in/onewrite-plan';
+import { ONEExecutePlanCommand } from './build-in/oneexecute-plan';
 import { InitCommand } from './build-in/init';
 import { HelpCommand } from './build-in/help';
 

@@ -6,7 +6,6 @@
  */
 
 import fs from 'fs';
-import { countTokens } from 'gpt-tokenizer';
 import path from 'pathe';
 import { z } from 'zod';
 import {
@@ -103,6 +102,14 @@ function createImageResponse(buffer: Buffer, ext: string): ToolResult {
     llmContent: [{ type: 'image', data, mimeType }],
     returnDisplay: 'Read image file successfully.',
   };
+}
+
+export function countTokens(content: string): number {
+  let tokens = 0;
+  for (const char of content) {
+    tokens += /[\u3400-\u9fff\uf900-\ufaff]/u.test(char) ? 0.6 : 0.3;
+  }
+  return tokens;
 }
 
 export async function processImage(
@@ -415,3 +422,5 @@ export function validateTokenCount(
     throw new MaxFileReadTokenExceededError(actualTokens, maxTokens);
   }
 }
+
+
