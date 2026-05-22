@@ -5,7 +5,7 @@ import { CodeAgentContext } from "../agents/codeAgent.js";
 import { safeStringify } from "../utils/safeStringify.js";
 import { MaxFileReadLengthExceededError, MaxFileReadTokenExceededError } from "../utils/error.js";
 import { countTokens } from 'gpt-tokenizer';
-import { ApprovalCategory } from "../utils/constants.js";
+import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
 const MAX_LINES_TO_READ = 2000;
@@ -13,7 +13,7 @@ const MAX_LINE_LENGTH = 2000;
 const MAX_FILE_LENGTH = 262144;
 const MAX_TOKENS = 25000;
 
-const toolName = 'read';
+const toolName = TOOL_NAMES.READ;
 
 export const readToolSchema: ChatCompletionFunctionTool = {
   type: "function",
@@ -119,7 +119,7 @@ export const readExecutor = async (input: Input, context: CodeAgentContext) => {
         : line,
     );
 
-    const processedContent = truncatedLines.join('\n');
+    const processedContent = truncatedLines.join('\\n');
     const actualLinesRead = selectedLines.length;
 
     return {
@@ -167,7 +167,7 @@ function readFileWithOffsetLimit(
   limit: number = MAX_LINES_TO_READ,
 ) {
   const fileContent = fs.readFileSync(filePath, { encoding: 'utf8' });
-  const allLines = fileContent.split(/\r?\n/);
+  const allLines = fileContent.split(/\\r?\\n/);
   const totalLines = allLines.length;
 
   const actualOffset = offset ?? 1;
@@ -177,7 +177,7 @@ function readFileWithOffsetLimit(
   const selectedLines = allLines.slice(startLine, endLine);
 
   return {
-    content: selectedLines.join('\n'),
+    content: selectedLines.join('\\n'),
     lineCount: selectedLines.length,
     startLine,
     endLine,

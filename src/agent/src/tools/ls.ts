@@ -1,10 +1,10 @@
 import path from "path";
 import { createFileTree, listDirectory, MAX_FILES, printTree, TRUNCATED_MESSAGE } from "../utils/list.js";
 import { CodeAgentContext } from "../agents/codeAgent.js";
-import { ApprovalCategory } from "../utils/constants.js";
+import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const toolName = 'ls';
+const toolName = TOOL_NAMES.LS;
 
 export const lsToolSchema: ChatCompletionFunctionTool = {
   type: "function",

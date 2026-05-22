@@ -1,11 +1,11 @@
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { safeStringify } from "../utils/safeStringify.js";
 import { glob } from "glob";
-import { ApprovalCategory } from "../utils/constants.js";
+import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
 const LIMIT = 100;
-const toolName = 'glob';
+const toolName = TOOL_NAMES.GLOB;
 
 export const globToolSchema: ChatCompletionFunctionTool = {
   type: "function",

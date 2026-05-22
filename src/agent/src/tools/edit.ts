@@ -2,10 +2,10 @@ import { CodeAgentContext } from "../agents/codeAgent.js";
 import path from 'pathe';
 import fs from 'fs';
 import { applyEdits } from "../utils/applyEdit.js";
-import { ApprovalCategory } from "../utils/constants.js";
+import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const toolName = 'edit';
+const toolName = TOOL_NAMES.EDIT;
 
 export const editToolSchema: ChatCompletionFunctionTool = {
   type: "function",

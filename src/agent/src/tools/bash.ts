@@ -1,11 +1,11 @@
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { ApprovalCategory } from "../utils/constants.js";
+import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
 const execAsync = promisify(exec);
-const toolName = 'bash';
+const toolName = TOOL_NAMES.BASH;
 
 export const bashToolSchema: ChatCompletionFunctionTool = {
   type: "function",
@@ -80,7 +80,7 @@ const BANNED_COMMANDS = new Set([
 ]);
 
 function isCommandBanned(command: string): boolean {
-  const firstWord = command.trim().split(/\s+/)[0]!;
+  const firstWord = command.trim().split(/\\s+/)[0]!;
   return BANNED_COMMANDS.has(firstWord);
 }
 
@@ -93,7 +93,7 @@ export const bashExecutor = async (input: Input, context: CodeAgentContext) => {
     }
 
     if (isCommandBanned(command)) {
-      throw new Error(`Command '${command.split(/\s+/)[0]}' is banned for security reasons`);
+      throw new Error(`Command '${command.split(/\\s+/)[0]}' is banned for security reasons`);
     }
 
     const options: any = {
@@ -127,7 +127,7 @@ export const bashExecutor = async (input: Input, context: CodeAgentContext) => {
 
       let output = "";
       if (stdout) output += stdout;
-      if (stderr) output += (output ? "\n" : "") + stderr;
+      if (stderr) output += (output ? "\\n" : "") + stderr;
 
       return {
         type: "tool-result" as const,

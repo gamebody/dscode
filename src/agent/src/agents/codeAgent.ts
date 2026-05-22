@@ -12,6 +12,7 @@ import { askUserQuestionToolSchema, askUserQuestionExecutor } from "../tools/ask
 import { readProjectSummary } from "../../../utils/projectContext.js";
 import { skillToolSchema, skillExecutor } from "../tools/skill.js";
 import { SkillsManager } from "../../../skills/index.js";
+import { TOOL_NAMES } from "../utils/constants.js";
 
 
 export interface BackgroundTask {
@@ -61,11 +62,11 @@ export default function codeAgent(context: CodeAgentContext, options?: CodeAgent
       todoWriteExecutor,
     } = createTodoTool({ filePath: filePath })
 
-    agent.registerTool('todoRead', todoReadToolSchema)
-    agent.registerToolExecutor('todoRead', todoReadExecutor)
+    agent.registerTool(TOOL_NAMES.TODO_READ, todoReadToolSchema)
+    agent.registerToolExecutor(TOOL_NAMES.TODO_READ, todoReadExecutor)
 
-    agent.registerTool('todoWrite', todoWriteToolSchema)
-    agent.registerToolExecutor('todoWrite', todoWriteExecutor)
+    agent.registerTool(TOOL_NAMES.TODO_WRITE, todoWriteToolSchema)
+    agent.registerToolExecutor(TOOL_NAMES.TODO_WRITE, todoWriteExecutor)
   }
 
   const agent = new Core<CodeAgentContext>({
@@ -81,30 +82,29 @@ export default function codeAgent(context: CodeAgentContext, options?: CodeAgent
 
   initAgent(agent)
 
-  agent.registerTool('ls', lsToolSchema)
-  agent.registerToolExecutor('ls', lsExecutor)
+  agent.registerTool(TOOL_NAMES.LS, lsToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.LS, lsExecutor)
 
-  agent.registerTool('read', readToolSchema)
-  agent.registerToolExecutor('read', readExecutor)
+  agent.registerTool(TOOL_NAMES.READ, readToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.READ, readExecutor)
 
-  agent.registerTool('write', writeToolSchema)
-  agent.registerToolExecutor('write', writeExecutor)
+  agent.registerTool(TOOL_NAMES.WRITE, writeToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.WRITE, writeExecutor)
 
+  agent.registerTool(TOOL_NAMES.GLOB, globToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.GLOB, globExecutor)
 
-  agent.registerTool('glob', globToolSchema)
-  agent.registerToolExecutor('glob', globExecutor)
+  agent.registerTool(TOOL_NAMES.EDIT, editToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.EDIT, editExecutor)
 
-  agent.registerTool('edit', editToolSchema)
-  agent.registerToolExecutor('edit', editExecutor)
+  agent.registerTool(TOOL_NAMES.BASH, bashToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.BASH, bashExecutor)
 
-  agent.registerTool('bash', bashToolSchema)
-  agent.registerToolExecutor('bash', bashExecutor)
+  agent.registerTool(TOOL_NAMES.ASK_USER_QUESTION, askUserQuestionToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.ASK_USER_QUESTION, askUserQuestionExecutor)
 
-  agent.registerTool('askUserQuestion', askUserQuestionToolSchema)
-  agent.registerToolExecutor('askUserQuestion', askUserQuestionExecutor)
-
-  agent.registerTool('skill', skillToolSchema)
-  agent.registerToolExecutor('skill', skillExecutor)
+  agent.registerTool(TOOL_NAMES.SKILL, skillToolSchema)
+  agent.registerToolExecutor(TOOL_NAMES.SKILL, skillExecutor)
 
   return agent
 }

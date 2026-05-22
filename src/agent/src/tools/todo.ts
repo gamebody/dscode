@@ -2,7 +2,7 @@ import fs from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'pathe';
 import { z } from 'zod';
-import { ApprovalCategory } from '../utils/constants.js';
+import { ApprovalCategory, TOOL_NAMES } from '../utils/constants.js';
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
 const TODO_WRITE_PROMPT = `
@@ -203,7 +203,7 @@ export type TodoItem = z.infer<typeof TodoItemSchema>;
 export const todoWriteToolSchema: ChatCompletionFunctionTool = {
   type: "function",
   function: {
-    name: "todoWrite",
+    name: TOOL_NAMES.TODO_WRITE,
     description: TODO_WRITE_PROMPT,
     parameters: {
       type: "object",
@@ -246,7 +246,7 @@ export const todoWriteToolSchema: ChatCompletionFunctionTool = {
 export const todoReadToolSchema: ChatCompletionFunctionTool = {
   type: "function",
   function: {
-    name: "todoRead",
+    name: TOOL_NAMES.TODO_READ,
     description: TODO_READ_PROMPT,
     parameters: {
       type: "object",

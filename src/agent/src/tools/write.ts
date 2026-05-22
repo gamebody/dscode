@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { CodeAgentContext } from "../agents/codeAgent.js";
-import { ApprovalCategory } from "../utils/constants.js";
+import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const toolName = 'write';
+const toolName = TOOL_NAMES.WRITE;
 
 export const writeToolSchema: ChatCompletionFunctionTool = {
   type: "function",
@@ -86,8 +86,8 @@ export type WriteTool = {
 }
 
 function format(content: string) {
-  if (!content.endsWith('\n')) {
-    return content + '\n';
+  if (!content.endsWith('\\n')) {
+    return content + '\\n';
   }
   return content;
 }

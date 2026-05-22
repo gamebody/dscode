@@ -1,8 +1,8 @@
-import { ApprovalCategory } from '../utils/constants.js';
+import { ApprovalCategory, TOOL_NAMES } from '../utils/constants.js';
 import { CodeAgentContext } from '../agents/codeAgent.js';
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const toolName = 'askUserQuestion';
+const toolName = TOOL_NAMES.ASK_USER_QUESTION;
 
 export const askUserQuestionToolSchema: ChatCompletionFunctionTool = {
   type: "function",
@@ -107,7 +107,7 @@ export const askUserQuestionExecutor = async (
       }
     };
   }
-  const summary = `${qas.map(({q,a}) => `"${q}" = "${a}"`).join('\n')}`
+  const summary = `${qas.map(({q,a}) => `"${q}" = "${a}"`).join('\\n')}`
 
   return {
     type: "tool-result" as const,

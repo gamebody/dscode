@@ -1,9 +1,9 @@
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { SkillsManager } from "../../../skills/index.js";
-import { ApprovalCategory } from "../utils/constants.js";
+import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
 
-const toolName = 'skill';
+const toolName = TOOL_NAMES.SKILL;
 
 export const skillToolSchema: ChatCompletionFunctionTool = {
   type: "function",
