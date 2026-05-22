@@ -3,12 +3,13 @@ import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import dayjs from 'dayjs'
 import os from 'os'
+import { ModelMessage } from '../agent'
+import { ReturnDisplay } from '../store/agent'
 
 export interface LogEntry {
-  timestamp: string
-  sessionId: string
-  type: 'message' | 'response'
-  data: unknown
+  t: string
+  mm: ModelMessage
+  returnDisplay?: ReturnDisplay
 }
 
 export function getDateStr(): string {
@@ -47,19 +48,18 @@ export class MessageLogger {
     return this.initPromise
   }
 
-  async log(entry: Omit<LogEntry, 'timestamp'>): Promise<void> {
+  async log(entry: Omit<LogEntry, 't'>): Promise<void> {
     const filePath = await this.ensureFile()
     const line = JSON.stringify({
-      timestamp: new Date().toISOString(),
+      t: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       ...entry,
     }) + '\n'
     await appendFile(filePath, line, 'utf-8')
   }
 
-  async logMessage(message: unknown): Promise<void> {
-    await this.log({ type: 'message', sessionId: this.sessionId, data: message })
+  async logMessage(item: Omit<LogEntry, 't'>): Promise<void> {
+    await this.log({ mm: item.mm, returnDisplay: item.returnDisplay })
   }
-
 }
 
 export interface CrashInfo {

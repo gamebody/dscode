@@ -303,7 +303,7 @@ export const stateCreator: StateCreator<
                   content: JSON.stringify({ error: 'Action rejected by user' })
                 })
                 agent.logger?.logMessage({
-                  ...message,
+                  mm: message,
                 })
                 toolResultMessages.push(message)
                 continue
@@ -332,7 +332,7 @@ export const stateCreator: StateCreator<
               toolResultMessages.push(message)
 
               agent.logger?.logMessage({
-                ...message,
+                mm: message,
                 returnDisplay: toolResponse.returnDisplay,
               })
             }

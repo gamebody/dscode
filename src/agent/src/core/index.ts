@@ -189,14 +189,14 @@ export default class Core<TContext = Record<string, any>> {
       this.messages.push(...message)
       if (log && this.logger) {
         for (const msg of message) {
-          this.logger.logMessage(msg)
+          this.logger.logMessage({ mm:msg })
         }
       }
       return
     }
     this.messages.push(message)
     if (log) {
-      this.logger?.logMessage(message)
+      this.logger?.logMessage({ mm:message })
     }
   }
 
