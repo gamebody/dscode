@@ -73,7 +73,11 @@ cmd2  # 说明
 \`\`\`
 src/
   xxx/  用途
+    xxx.ts  具体职责描述
 \`\`\`
+- 每个目录/文件需注明其功能职责，让 AI 能根据功能需求快速定位到对应文件
+- 关键文件需单独列出并说明其在整个架构中的作用
+- 按功能模块（而非字母顺序）组织，核心模块在前
 
 ## Conventions
 - <约定>
@@ -117,14 +121,27 @@ bunx dscode          # Run the CLI tool (if linked)
 \`\`\`
 index.tsx                     Entry point — renders Ink app
 src/
-  App.tsx                     Root component
+  App.tsx                     Root component, state & routing orchestration
   agent/                      AI agent engine
-  commands/                   Command system
+    agent.ts                  Agent loop: message handling, tool dispatch, response generation
+    tools.ts                  Tool definitions (bash, read, write, glob, etc.)
+    prompts.ts                System prompts & prompt templates
+  commands/                   Command system (/init, /help, etc.)
+    command.ts                BaseCommand abstract class
+    build-in/                 Built-in command implementations
   components/                 Ink UI components
-  contexts/                   React contexts
+    Chat.tsx                  Message list & streaming display
+    Input.tsx                 User input box with history
+    DiffView.tsx              Code diff rendering
+    Sidebar.tsx               File tree & context panel
+  contexts/                   React contexts (ThemeContext, AppContext, etc.)
   store/                      Zustand stores
+    chatStore.ts              Conversation messages & streaming state
+    appStore.ts               Global app state (theme, config, etc.)
   themes/                     Terminal color themes (15+ themes)
   utils/                      Utilities
+    tokens.ts                 Token counting & cost estimation
+    clipboard.ts              Cross-platform clipboard integration
 \`\`\`
 
 ## Conventions
