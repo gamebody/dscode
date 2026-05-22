@@ -1,0 +1,496 @@
+import { highlight, supportsLanguage } from 'cli-highlight';
+import crypto from 'crypto';
+import { createTwoFilesPatch } from 'diff';
+import { Box, Text } from 'ink';
+import type React from 'react';
+import { useMemo } from 'react';
+import { useTerminalSize } from '../utils/useTerminalSize';
+
+interface DiffProps {
+  originalContent: string;
+  newContent: string;
+  fileName?: string;
+  maxHeight?: number;
+  terminalWidth?: number;
+  useCodeHighlight?: boolean;
+  startLineNumber?: number;
+}
+
+interface DiffLine {
+  type: 'add' | 'del' | 'context' | 'hunk' | 'other';
+  oldLine?: number;
+  newLine?: number;
+  content: string;
+}
+
+interface DiffStats {
+  linesAdded: number;
+  linesRemoved: number;
+}
+
+const DEFAULT_TAB_WIDTH = 4;
+const DEFAULT_MAX_HEIGHT = 20;
+const MAX_CONTEXT_LINES_WITHOUT_GAP = 5;
+const DEFAULT_TERMINAL_WIDTH = 80;
+
+function inferLanguage(fileName?: string): string {
+  if (!fileName) return 'text';
+
+  const ext = fileName.split('.').pop()?.toLowerCase() || 'text';
+  const languageMap: Record<string, string> = {
+    ts: 'typescript',
+    tsx: 'tsx',
+    js: 'javascript',
+    jsx: 'jsx',
+    py: 'python',
+    go: 'go',
+    rs: 'rust',
+    java: 'java',
+    cpp: 'cpp',
+    c: 'c',
+    css: 'css',
+    html: 'html',
+    json: 'json',
+    md: 'markdown',
+    yaml: 'yaml',
+    yml: 'yaml',
+    sh: 'bash',
+    rb: 'ruby',
+    php: 'php',
+    swift: 'swift',
+    kt: 'kotlin',
+    sql: 'sql',
+  };
+
+  return languageMap[ext] || ext;
+}
+
+function extractNewFileContent(parsedLines: DiffLine[]): string {
+  return parsedLines
+    .filter((line) => line.type === 'add')
+    .map((line) => line.content)
+    .join('\n');
+}
+
+function generateFileDiff(
+  originalContent: string,
+  newContent: string,
+  filePath: string,
+): string {
+  // Defensive check: diff library crashes if input is not a string
+  if (typeof originalContent !== 'string') originalContent = '';
+  if (typeof newContent !== 'string') newContent = '';
+  return createTwoFilesPatch(
+    `${filePath} (original)`,
+    `${filePath} (modified)`,
+    originalContent,
+    newContent,
+    undefined,
+    undefined,
+    { context: 3 },
+  );
+}
+
+function calculateStatsFromParsedLines(parsedLines: DiffLine[]): DiffStats {
+  let linesAdded = 0;
+  let linesRemoved = 0;
+
+  for (const line of parsedLines) {
+    if (line.type === 'add') {
+      linesAdded += 1;
+    } else if (line.type === 'del') {
+      linesRemoved += 1;
+    }
+  }
+
+  return { linesAdded, linesRemoved };
+}
+
+function parseDiffWithLineNumbers(diffContent: string): DiffLine[] {
+  const lines = diffContent.split('\n');
+  const result: DiffLine[] = [];
+  let currentOldLine = 0;
+  let currentNewLine = 0;
+  let inHunk = false;
+  const hunkHeaderRegex = /^@@ -(\d+),?\d* \+(\d+),?\d* @@/;
+
+  for (const line of lines) {
+    const hunkMatch = line.match(hunkHeaderRegex);
+    if (hunkMatch) {
+      currentOldLine = parseInt(hunkMatch[1], 10);
+      currentNewLine = parseInt(hunkMatch[2], 10);
+      inHunk = true;
+      result.push({ type: 'hunk', content: line });
+      currentOldLine--;
+      currentNewLine--;
+      continue;
+    }
+    if (!inHunk) {
+      if (
+        line.startsWith('--- ') ||
+        line.startsWith('+++ ') ||
+        line.startsWith('diff --git') ||
+        line.startsWith('index ') ||
+        line.startsWith('similarity index') ||
+        line.startsWith('rename from') ||
+        line.startsWith('rename to') ||
+        line.startsWith('new file mode') ||
+        line.startsWith('deleted file mode')
+      )
+        continue;
+      continue;
+    }
+    if (line.startsWith('+')) {
+      currentNewLine++;
+      result.push({
+        type: 'add',
+        newLine: currentNewLine,
+        content: line.substring(1),
+      });
+    } else if (line.startsWith('-')) {
+      currentOldLine++;
+      result.push({
+        type: 'del',
+        oldLine: currentOldLine,
+        content: line.substring(1),
+      });
+    } else if (line.startsWith(' ')) {
+      currentOldLine++;
+      currentNewLine++;
+      result.push({
+        type: 'context',
+        oldLine: currentOldLine,
+        newLine: currentNewLine,
+        content: line.substring(1),
+      });
+    } else if (line.startsWith('\\')) {
+      result.push({ type: 'other', content: line });
+    }
+  }
+  return result;
+}
+
+function generateDiffLines(
+  originalContent: string,
+  newContent: string,
+  filePath: string = 'file',
+): DiffLine[] {
+  if (originalContent === newContent) {
+    return [];
+  }
+
+  let diffContent = generateFileDiff(originalContent, newContent, filePath);
+  // createTwoFilesPatch in generateFileDiff can return undefined
+  if (diffContent === undefined || diffContent === null) {
+    diffContent = `[Error] Failed to generate diff for file: ${filePath}`;
+  }
+  return parseDiffWithLineNumbers(diffContent);
+}
+
+function isNewFile(parsedLines: DiffLine[]): boolean {
+  return parsedLines.every(
+    (line) =>
+      line.type === 'add' ||
+      line.type === 'hunk' ||
+      line.type === 'other' ||
+      line.content.startsWith('diff --git') ||
+      line.content.startsWith('new file mode'),
+  );
+}
+
+function CodeHighlightRenderer({
+  content,
+  fileName,
+  maxHeight,
+  terminalWidth,
+}: {
+  content: string;
+  fileName?: string;
+  maxHeight: number;
+  terminalWidth: number;
+}): React.ReactNode {
+  if (!content || content.trim() === '') {
+    return (
+      <Box paddingX={1}>
+        <Text dimColor>Empty file</Text>
+      </Box>
+    );
+  }
+
+  const inferredLanguage = inferLanguage(fileName);
+  // Guard against unsupported languages by falling back to auto-detect
+  // cli-highlight will throw if the language is not supported
+  const language = supportsLanguage(inferredLanguage)
+    ? inferredLanguage
+    : undefined;
+
+  const lines = content.split('\n');
+  const effectiveMaxLines =
+    maxHeight === Infinity ? Infinity : Math.max(5, maxHeight - 2);
+  const shouldTruncate = lines.length > effectiveMaxLines;
+  const visibleLines = shouldTruncate
+    ? lines.slice(0, effectiveMaxLines)
+    : lines;
+  const hiddenCount = lines.length - visibleLines.length;
+
+  const highlightedContent = highlight(visibleLines.join('\n'), {
+    language,
+    ignoreIllegals: true,
+  });
+
+  return (
+    <Box
+      flexDirection="column"
+      width={Math.min(terminalWidth, DEFAULT_TERMINAL_WIDTH)}
+    >
+      {fileName && (
+        <Box paddingX={1} justifyContent="space-between">
+          <Box>
+            <Text bold>{fileName}</Text>
+            <Text color="green"> (new file +{lines.length})</Text>
+          </Box>
+        </Box>
+      )}
+
+      <Box paddingX={1}>
+        <Text>{highlightedContent}</Text>
+      </Box>
+
+      {shouldTruncate && (
+        <Box paddingX={1}>
+          <Text color="gray">
+            ... {hiddenCount} more line{hiddenCount === 1 ? '' : 's'} hidden
+            (Press ctrl+o to expand) ...
+          </Text>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function RenderDiffContent(
+  parsedLines: DiffLine[],
+  fileName: string | undefined,
+  maxHeight: number,
+  terminalWidth: number,
+  startLineNumber: number = 1,
+): React.ReactNode {
+  const normalizedLines = parsedLines.map((line) => ({
+    ...line,
+    content: line.content.replace(/\t/g, ' '.repeat(DEFAULT_TAB_WIDTH)),
+  }));
+
+  const displayableLines = normalizedLines.filter(
+    (l) => l.type !== 'hunk' && l.type !== 'other',
+  );
+
+  if (displayableLines.length === 0) {
+    return (
+      <Box padding={1}>
+        <Text dimColor>No changes detected.</Text>
+      </Box>
+    );
+  }
+
+  let baseIndentation = Infinity;
+  for (const line of displayableLines) {
+    if (line.content.trim() === '') continue;
+    const firstCharIndex = line.content.search(/\S/);
+    const currentIndent = firstCharIndex === -1 ? 0 : firstCharIndex;
+    baseIndentation = Math.min(baseIndentation, currentIndent);
+  }
+  if (!isFinite(baseIndentation)) {
+    baseIndentation = 0;
+  }
+
+  const stats = calculateStatsFromParsedLines(parsedLines);
+
+  const key = fileName
+    ? `diff-box-${fileName}`
+    : `diff-box-${crypto.createHash('sha1').update(JSON.stringify(parsedLines)).digest('hex')}`;
+
+  let lastLineNumber: number | null = null;
+  const visibleLines = displayableLines.slice(0, maxHeight - 2); // Reserve space for header and potential truncation message
+  const hasMoreLines = displayableLines.length > visibleLines.length;
+
+  const renderLines = useMemo(() => {
+    const { linesAdded, linesRemoved } = stats;
+    if (!linesAdded && !linesRemoved) return null;
+
+    const addedText = linesAdded ? (
+      <Text color="green">+{linesAdded}</Text>
+    ) : null;
+
+    const removedText = linesRemoved ? (
+      <Text color="red">-{linesRemoved}</Text>
+    ) : null;
+
+    return (
+      <Text>
+        {' '}
+        ({addedText}
+        {addedText && removedText ? ' ' : null}
+        {removedText})
+      </Text>
+    );
+  }, [stats.linesAdded, stats.linesRemoved]);
+
+  return (
+    <Box
+      key={key}
+      paddingX={1}
+      flexDirection="column"
+      width={Math.min(terminalWidth, DEFAULT_TERMINAL_WIDTH)}
+    >
+      {fileName && (
+        <Box paddingX={1} justifyContent="space-between">
+          <Box>
+            <Text bold>{fileName}</Text>
+            <Text>{renderLines}</Text>
+          </Box>
+        </Box>
+      )}
+
+      <Box flexDirection="column">
+        {visibleLines.reduce<React.ReactNode[]>((acc, line, index) => {
+          let relevantLineNumberForGapCalc: number | null = null;
+          if (line.type === 'add' || line.type === 'context') {
+            relevantLineNumberForGapCalc = line.newLine ?? null;
+          } else if (line.type === 'del') {
+            relevantLineNumberForGapCalc = line.oldLine ?? null;
+          }
+
+          if (
+            lastLineNumber !== null &&
+            relevantLineNumberForGapCalc !== null &&
+            relevantLineNumberForGapCalc >
+              lastLineNumber + MAX_CONTEXT_LINES_WITHOUT_GAP + 1
+          ) {
+            acc.push(
+              <Box key={`gap-${index}`}>
+                <Text color="gray">...</Text>
+              </Box>,
+            );
+          }
+
+          const lineKey = `diff-line-${index}`;
+          let gutterNumStr = '';
+          let color: 'green' | 'red' | undefined;
+          let prefixSymbol = ' ';
+          let dim = false;
+          const lineOffset = startLineNumber - 1;
+
+          switch (line.type) {
+            case 'add':
+              gutterNumStr = line.newLine
+                ? (line.newLine + lineOffset).toString()
+                : '';
+              color = 'green';
+              prefixSymbol = '+';
+              lastLineNumber = line.newLine ?? null;
+              break;
+            case 'del':
+              gutterNumStr = line.oldLine
+                ? (line.oldLine + lineOffset).toString()
+                : '';
+              color = 'red';
+              prefixSymbol = '-';
+              if (line.oldLine !== undefined) {
+                lastLineNumber = line.oldLine;
+              }
+              break;
+            case 'context':
+              gutterNumStr = line.newLine
+                ? (line.newLine + lineOffset).toString()
+                : '';
+              dim = true;
+              prefixSymbol = ' ';
+              lastLineNumber = line.newLine ?? null;
+              break;
+            default:
+              return acc;
+          }
+
+          const displayContent = line.content.substring(baseIndentation);
+
+          acc.push(
+            <Box key={lineKey}>
+              <Text color="gray">{gutterNumStr.padEnd(4)} </Text>
+              <Text color={color} dimColor={dim}>
+                {prefixSymbol}{' '}
+              </Text>
+              <Text color={color} dimColor={dim}>
+                {displayContent}
+              </Text>
+            </Box>,
+          );
+          return acc;
+        }, [])}
+
+        {hasMoreLines && (
+          <Box>
+            <Text color="gray">
+              ... {displayableLines.length - visibleLines.length} more line
+              {displayableLines.length - visibleLines.length === 1 ? '' : 's'}{' '}
+              hidden (Press ctrl+o to expand) ...
+            </Text>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+export function DiffViewer({
+  originalContent,
+  newContent,
+  fileName,
+  maxHeight = DEFAULT_MAX_HEIGHT,
+  useCodeHighlight = true,
+  startLineNumber = 1,
+}: DiffProps) {
+  const { columns: terminalWidth } = useTerminalSize();
+  const transcriptMode = false
+
+  const effectiveMaxHeight = transcriptMode ? Infinity : maxHeight;
+
+  const diffLines = useMemo(
+    () => generateDiffLines(originalContent, newContent, fileName),
+    [originalContent, newContent, fileName],
+  );
+
+  if (diffLines.length === 0) {
+    return (
+      <Box paddingX={1} flexDirection="column">
+        {fileName && (
+          <Box paddingX={1}>
+            <Text bold>{fileName}</Text>
+          </Box>
+        )}
+        <Box paddingX={1}>
+          <Text dimColor>No changes detected</Text>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (isNewFile(diffLines) && useCodeHighlight) {
+    const content = extractNewFileContent(diffLines);
+    return (
+      <CodeHighlightRenderer
+        content={content}
+        fileName={fileName}
+        maxHeight={effectiveMaxHeight}
+        terminalWidth={terminalWidth}
+      />
+    );
+  }
+
+  return RenderDiffContent(
+    diffLines,
+    fileName,
+    effectiveMaxHeight,
+    terminalWidth,
+    startLineNumber,
+  );
+}

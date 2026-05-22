@@ -2,12 +2,29 @@ import { StateCreator } from 'zustand'
 import { produce } from 'immer'
 import { StateActions } from './index'
 import { ApprovalCategory, AskUserQuestionTool, BashTool, Core, EditTool, GlobTool, LsTool, ModelMessage, ReadTool, TodoReadTool, TodoWriteTool, WriteTool } from '../agent'
-import { log } from 'console'
-import { QA } from './approval'
-import { ChatCompletionToolMessageParam } from 'openai/resources/index.mjs'
 
+import { QA } from './approval'
+import { BashToolReturnDisplay } from '../agent/src/tools/bash'
+import { EditToolReturnDisplay } from '../agent/src/tools/edit'
+import { SkillToolReturnDisplay } from '../agent/src/tools/skill'
+import { AskUserQuestionToolReturnDisplay } from '../agent/src/tools/askUserQuestion'
+import { ReadToolReturnDisplay } from '../agent/src/tools/read'
+import { TodoReadReturnDisplay, TodoWriteReturnDisplay } from '../agent/src/tools/todo'
+import { LsToolReturnDisplay } from '../agent/src/tools/ls'
 
 export type Tools = ReadTool | LsTool | GlobTool | WriteTool | EditTool | TodoWriteTool | TodoReadTool | BashTool | AskUserQuestionTool
+
+
+export type ReturnDisplay = 
+  BashToolReturnDisplay | 
+  EditToolReturnDisplay | 
+  AskUserQuestionToolReturnDisplay | 
+  SkillToolReturnDisplay | 
+  ReadToolReturnDisplay |
+  TodoReadReturnDisplay |
+  TodoWriteReturnDisplay |
+  SkillToolReturnDisplay |
+  LsToolReturnDisplay
 
 export type Tool = {
   role: 'tool',
@@ -15,7 +32,7 @@ export type Tool = {
     toolCallId: string
     toolName: string
     state: 'loading' | 'done'
-    returnDisplay?: unknown
+    returnDisplay?: ReturnDisplay
   } & Tools
 }
 

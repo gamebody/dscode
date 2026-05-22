@@ -368,6 +368,17 @@ export function createTodoTool(opts: { filePath: string }) {
   };
 }
 
+export type TodoWriteReturnDisplay = {
+  type: 'todo_write';
+  oldTodos: TodoList;
+  newTodos: TodoList;
+};
+
+export type TodoReadReturnDisplay = {
+  type: 'todo_read';
+  todos: TodoList;
+};
+
 export type TodoWriteTool = {
   name: 'todoWrite',
   input: TodoWriteInput,
@@ -378,4 +389,5 @@ export type TodoReadTool = {
   name: 'todoRead',
   input: null,
   output: TodoReadOutput,
+  returnDisplay: TodoReadReturnDisplay,
 }

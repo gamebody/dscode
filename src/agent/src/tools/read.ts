@@ -1,17 +1,14 @@
 import fs from "fs";
 import path from "path";
-import { createFileTree, listDirectory, MAX_FILES, printTree, TRUNCATED_MESSAGE } from "../utils/list.js";
 import { CodeAgentContext } from "../agents/codeAgent.js";
-import { safeStringify } from "../utils/safeStringify.js";
 import { MaxFileReadLengthExceededError, MaxFileReadTokenExceededError } from "../utils/error.js";
-import { countTokens } from 'gpt-tokenizer';
 import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
+import { checkFileType, createEmptyFileResult, createReadResult, estimatePartialReadSize, isImageFile, processFileContent, processImage, resolveFilePath, validateAndTruncateContent, validateFileSize, validateReadParams } from "../utils/read.shared.js";
 
 const MAX_LINES_TO_READ = 2000;
 const MAX_LINE_LENGTH = 2000;
 const MAX_FILE_LENGTH = 262144;
-const MAX_TOKENS = 25000;
 
 const toolName = TOOL_NAMES.READ;
 
@@ -51,8 +48,8 @@ Usage:
 
 type Input = {
   file_path: string;
-  offset?: number | null;
-  limit?: number | null;
+  offset?: number;
+  limit?: number;
 }
 
 type Output = {
@@ -62,88 +59,100 @@ type Output = {
 export const readExecutor = async (input: Input, context: CodeAgentContext) => {
   const { file_path, offset, limit } = input;
   try {
-    if (offset !== undefined && offset !== null && offset < 1) {
-      throw new Error('Offset must be >= 1');
-    }
-    if (limit !== undefined && limit !== null && limit < 1) {
-      throw new Error('Limit must be >= 1');
-    }
+    validateReadParams(offset, limit);
 
     const ext = path.extname(file_path).toLowerCase();
+    checkFileType(ext, file_path);
 
-    const fullFilePath = (() => {
-      if (path.isAbsolute(file_path)) {
-        return file_path;
-      }
-      const full = path.resolve(context.cwd, file_path);
-      if (fs.existsSync(full)) {
-        return full;
-      }
-      if (file_path.startsWith('@')) {
-        const full = path.resolve(context.cwd, file_path.slice(1));
-        if (fs.existsSync(full)) {
-          return full;
+    const fullFilePath = resolveFilePath(file_path, context.cwd);
+
+    // Get file stats once and reuse throughout
+    const stats = fs.statSync(fullFilePath);
+
+    // Level 1: Pre-check validation
+    const isPartialRead = offset !== undefined || limit !== undefined;
+
+    if (!isImageFile(ext)) {
+      if (isPartialRead) {
+        // For partial reads, estimate the size of content that will be read
+        const estimatedSize = estimatePartialReadSize(
+          fullFilePath,
+          limit ?? MAX_LINES_TO_READ,
+        );
+
+        // If we can estimate and it's too large, fail fast
+        if (estimatedSize !== null && estimatedSize > MAX_FILE_LENGTH) {
+          throw new MaxFileReadLengthExceededError(
+            estimatedSize,
+            MAX_FILE_LENGTH,
+          );
+        }
+      } else {
+        // For full file reads, check the actual file size
+        if (!validateFileSize(fullFilePath, MAX_FILE_LENGTH)) {
+          throw new MaxFileReadLengthExceededError(
+            stats.size,
+            MAX_FILE_LENGTH,
+          );
         }
       }
-      throw new Error(`File ${file_path} does not exist.`);
-    })();
+    }
 
+    // Handle image files
+    if (isImageFile(ext)) {
+      return {
+        type: "tool-result" as const,
+        returnDisplay: 'imgage file not supported',
+        payload: {
+          llmContent: 'imgage file not supported',
+        }
+      };
+    }
+
+    // Check if empty
+    if (stats.size === 0) {
+      return createEmptyFileResult(file_path);
+    }
+
+    // Read text file using fs
+    const fileContent = fs.readFileSync(fullFilePath, { encoding: 'utf8' });
+    if (fileContent === undefined || fileContent === null) {
+      throw new Error(`Failed to read file: ${file_path}`);
+    }
+
+    // Process content
     const {
       content,
       totalLines,
       startLine,
+      endLine,
       actualLimit,
       selectedLines,
-      endLine,
-    } = readFileWithOffsetLimit(
-      fullFilePath,
+    } = processFileContent(
+      fileContent,
       offset ?? 1,
       limit ?? MAX_LINES_TO_READ,
     );
 
-    if (content.length > MAX_FILE_LENGTH) {
-      throw new MaxFileReadLengthExceededError(
-        content.length,
-        MAX_FILE_LENGTH,
-      );
-    }
+    // Validate and truncate (now synchronous with Level 2 & 3 validation)
+    const { processedContent, actualLinesRead } =
+      validateAndTruncateContent(content, selectedLines);
 
-    const tokenCount = countTokens(content);
-    if (tokenCount > MAX_TOKENS) {
-      throw new MaxFileReadTokenExceededError(tokenCount, MAX_TOKENS);
-    }
-
-    const truncatedLines = selectedLines.map((line) =>
-      line.length > MAX_LINE_LENGTH
-        ? `${line.substring(0, MAX_LINE_LENGTH)}...`
-        : line,
+    return createReadResult(
+      file_path,
+      processedContent,
+      totalLines,
+      startLine,
+      endLine,
+      actualLimit,
+      actualLinesRead,
+      offset,
+      limit,
     );
-
-    const processedContent = truncatedLines.join('\\n');
-    const actualLinesRead = selectedLines.length;
-
-    return {
-      type: "tool-result" as const,
-      returnDisplay:
-        offset !== undefined || limit !== undefined
-          ? `Read ${actualLinesRead} lines (from line ${startLine + 1} to ${endLine}).`
-          : `Read ${actualLinesRead} lines.`,
-      payload: {
-        llmContent: safeStringify({
-          type: 'text',
-          filePath: file_path,
-          content: processedContent,
-          totalLines,
-          offset: startLine + 1,
-          limit: actualLimit,
-          actualLinesRead,
-        }),
-      }
-    };
   } catch (e) {
     return {
       isError: true,
-      returnDisplay:  `Error: ${e instanceof Error ? e.message : String(e)}`,
+      returnDisplay: `Error: ${e instanceof Error ? e.message : String(e)}`,
       payload: {
         llmContent: e instanceof Error ? e.message : 'Unknown error',
       }
@@ -155,34 +164,11 @@ readExecutor.approval = {
   category: ApprovalCategory.READ,
 }
 
+export type ReadToolReturnDisplay = string;
+
 export type ReadTool = {
   name: 'read',
   input: Input,
   output: Output,
 }
 
-function readFileWithOffsetLimit(
-  filePath: string,
-  offset: number = 1,
-  limit: number = MAX_LINES_TO_READ,
-) {
-  const fileContent = fs.readFileSync(filePath, { encoding: 'utf8' });
-  const allLines = fileContent.split(/\\r?\\n/);
-  const totalLines = allLines.length;
-
-  const actualOffset = offset ?? 1;
-  const actualLimit = limit ?? MAX_LINES_TO_READ;
-  const startLine = Math.max(0, actualOffset - 1);
-  const endLine = Math.min(totalLines, startLine + actualLimit);
-  const selectedLines = allLines.slice(startLine, endLine);
-
-  return {
-    content: selectedLines.join('\\n'),
-    lineCount: selectedLines.length,
-    startLine,
-    endLine,
-    actualLimit,
-    totalLines,
-    selectedLines,
-  };
-}

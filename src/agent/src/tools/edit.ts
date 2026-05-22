@@ -64,9 +64,11 @@ export const editExecutor = async (input: Input, context: CodeAgentContext) => {
       ? file_path
       : path.resolve(cwd, file_path);
     const relativeFilePath = path.relative(cwd, fullFilePath);
-    const { patch, updatedFile } = applyEdits(cwd, fullFilePath, [
-      { old_string, new_string, replace_all },
-    ]);
+    const { patch, updatedFile, startLineNumber } = applyEdits(
+      cwd,
+      fullFilePath,
+      [{ old_string, new_string, replace_all }],
+    );
     const dir = path.dirname(fullFilePath);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(fullFilePath, updatedFile, 'utf-8');
@@ -81,6 +83,7 @@ export const editExecutor = async (input: Input, context: CodeAgentContext) => {
         originalContent: { inputKey: 'old_string' },
         newContent: { inputKey: 'new_string' },
         absoluteFilePath: fullFilePath,
+        startLineNumber,
       },
     };
   } catch (e) {
@@ -98,8 +101,18 @@ editExecutor.approval = {
   category: ApprovalCategory.WRITE,
 }
 
+export type EditToolReturnDisplay = {
+  type: 'diff_viewer';
+  filePath: string;
+  originalContent: { inputKey: string };
+  newContent: { inputKey: string };
+  absoluteFilePath: string;
+  startLineNumber: number;
+} | string;
+
 export type EditTool = {
   name: 'edit',
   input: Input,
   output: Output,
 }
+

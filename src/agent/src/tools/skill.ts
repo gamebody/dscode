@@ -83,6 +83,8 @@ skillExecutor.approval = {
   category: ApprovalCategory.READ,
 };
 
+export type SkillToolReturnDisplay = string;
+
 export type SkillTool = {
   name: "skill";
   input: Input;

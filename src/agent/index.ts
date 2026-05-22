@@ -10,6 +10,7 @@ import type { BashTool } from './src/tools/bash.js';
 import type { AskUserQuestionTool } from './src/tools/askUserQuestion.js';
 import { ApprovalCategory } from './src/utils/constants.js';
 import type { ModelMessage, StreamEvent } from './src/core/index.js';
+import { SkillTool } from './src/tools/skill.js';
 
 export {
   Core,
@@ -29,7 +30,8 @@ export type {
   TodoReadTool,
   TodoWriteTool,
   BashTool,
-  AskUserQuestionTool
+  AskUserQuestionTool,
+  SkillTool,
 };
 
 

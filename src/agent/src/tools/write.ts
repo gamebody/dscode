@@ -79,6 +79,15 @@ writeExecutor.approval = {
   category: ApprovalCategory.WRITE,
 }
 
+export type WriteToolReturnDisplay = {
+  type: 'diff_viewer';
+  filePath: string;
+  absoluteFilePath: string;
+  originalContent: string;
+  newContent: { inputKey: string };
+  writeType: 'replace' | 'add';
+} | string;
+
 export type WriteTool = {
   name: 'write',
   input: Input,

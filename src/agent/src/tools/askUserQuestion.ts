@@ -122,8 +122,11 @@ askUserQuestionExecutor.approval = {
   category: ApprovalCategory.ASK,
 };
 
+export type AskUserQuestionToolReturnDisplay = string;
+
 export type AskUserQuestionTool = {
   name: 'askUserQuestion',
   input: Input,
   output: Output,
 }
+

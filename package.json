@@ -10,6 +10,7 @@
     "ai": "5.0.87",
     "ansi-escapes": "^7.0.0",
     "chalk": "^5.4.1",
+    "cli-highlight": "^2.1.11",
     "color": "4.2.3",
     "command-exists": "^1.2.9",
     "dayjs": "^1.11.20",

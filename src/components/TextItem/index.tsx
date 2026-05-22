@@ -1,10 +1,11 @@
 import React, { ReactElement, ReactNode, useMemo } from "react";
 import { Box, Text } from "ink";
-import { Tool, UIMessage } from "../../store/agent";
+import { ReturnDisplay, Tool, UIMessage } from "../../store/agent";
 import UserText from "./UserText";
 import { Colors } from "../../utils/colors";
 import Gradient from "ink-gradient";
 import { MarkdownDisplay } from "../../utils/MarkdownDisplay";
+import { DiffViewer } from "../DiffViewer";
 
 const MAX_VISIBLE_LINES = 3;
 
@@ -26,13 +27,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: Colors.AccentGreen,
 };
 
-const TOOL_INPUT_EXTRACTORS: Record<string, (input: any) => string> = {
-  read: (input) => input.file_path,
-  ls: (input) => input.dir_path,
-  glob: (input) => input.path || input.pattern,
-  edit: (input) => input.file_path,
-  write: (input) => input.file_path,
-};
+
 
 type TodoItem = {
   id: string;
@@ -132,55 +127,84 @@ const ThinkingBlock: React.FC<{
   );
 };
 
-const toolOutput = (tool: Tool["content"]): string =>
-  typeof tool.returnDisplay === "string"
-    ? tool.returnDisplay
-    : JSON.stringify(tool.returnDisplay);
+const TOOL_INPUT_EXTRACTORS: Record<string, (input: any) => string> = {
+  read: (input) => input.file_path,
+  ls: (input) => input.dir_path,
+  glob: (input) => input.path || input.pattern,
+  edit: (input) => input.file_path,
+  write: (input) => input.file_path,
+};
 
 const renderTool = (tool: Tool["content"]): ReactElement => {
-  const output = toolOutput(tool);
   const extractor = TOOL_INPUT_EXTRACTORS[tool.name];
-  if (extractor) {
+  const returnDisplay: ReturnDisplay | undefined = tool.returnDisplay;
+
+  if (typeof returnDisplay === "string" && extractor) {
     return (
-      <ToolDisplay name={tool.name} input={extractor(tool.input)} output={output} />
+      <ToolDisplay name={tool.name} input={extractor(tool.input)} output={returnDisplay} />
     );
   }
 
-  if (tool.name === "todoRead") {
-    const todoData = tool.returnDisplay as {
-      type: "todo_read";
-      todos: TodoItem[];
-    };
-    return (
-      <Box marginY={1} flexDirection="column">
-        <Box>
-          <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
-        </Box>
-        <TodoList todos={todoData.todos} />
-      </Box>
-    );
-  }
+  if (typeof returnDisplay === "object" && returnDisplay !== null) {
+    const toolInput = tool.input as Record<string, unknown> | null;
 
-  if (tool.name === "todoWrite") {
-    const todoData = tool.returnDisplay as {
-      type: "todo_write";
-      newTodos: TodoItem[];
-    };
-    return (
-      <Box marginY={1} flexDirection="column">
-        <Box>
-          <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
+    if (returnDisplay.type === 'todo_read') {
+      return (
+        <Box marginY={1} flexDirection="column">
+          <Box>
+            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
+          </Box>
+          <TodoList todos={returnDisplay.todos} />
         </Box>
-        <TodoList todos={todoData.newTodos} />
-      </Box>
-    );
+      );
+    }
+
+    if (returnDisplay.type === 'todo_write') {
+      return (
+        <Box marginY={1} flexDirection="column">
+          <Box>
+            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
+          </Box>
+          <TodoList todos={returnDisplay.newTodos} />
+        </Box>
+      );
+    }
+
+    if (returnDisplay.type === 'diff_viewer') {
+      const { filePath, originalContent, newContent, startLineNumber } = returnDisplay;
+      const resolvedOriginalContent =
+        typeof originalContent === 'object' && 'inputKey' in originalContent
+          ? (toolInput?.[originalContent.inputKey] as string) ?? ''
+          : originalContent;
+      const resolvedNewContent =
+        typeof newContent === 'object' && 'inputKey' in newContent
+          ? (toolInput?.[newContent.inputKey] as string) ?? ''
+          : newContent;
+
+      return (
+        <Box marginY={1} flexDirection="column">
+          <Box>
+            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
+            <Text color={Colors.Gray}>({filePath})</Text>
+          </Box>
+          <Box marginLeft={3}>
+            <DiffViewer
+              originalContent={resolvedOriginalContent}
+              newContent={resolvedNewContent}
+              fileName={filePath}
+              startLineNumber={startLineNumber}
+            />
+          </Box>
+        </Box>
+      );
+    }
   }
 
   return (
     <ToolDisplay
       name={tool.name}
       input={JSON.stringify(tool.input)}
-      output={output}
+      output={JSON.stringify(tool.output)}
     />
   );
 };

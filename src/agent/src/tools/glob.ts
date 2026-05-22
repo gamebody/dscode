@@ -92,8 +92,11 @@ globExecutor.approval = {
   category: ApprovalCategory.READ,
 }
 
+export type GlobToolReturnDisplay = string;
+
 export type GlobTool = {
   name: 'glob',
   input: Input,
   output: Output,
 }
+

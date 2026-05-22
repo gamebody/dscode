@@ -153,8 +153,11 @@ bashExecutor.approval = {
   category: ApprovalCategory.COMMAND,
 }
 
+export type BashToolReturnDisplay = string;
+
 export type BashTool = {
   name: 'bash',
   input: Input,
   output: Output,
 }
+

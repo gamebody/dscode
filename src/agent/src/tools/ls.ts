@@ -81,8 +81,11 @@ lsExecutor.approval = {
   category: ApprovalCategory.READ,
 }
 
+export type LsToolReturnDisplay = string;
+
 export type LsTool = {
   name: 'ls',
   input: Input,
   output: Output,
 }
+
