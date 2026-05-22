@@ -27,46 +27,59 @@ export interface CodeAgentContext {
   backgroundTasks?: Record<string, BackgroundTask>
 }
 
-export default function codeAgent(model?: ModelConfig, abortSignal?: AbortSignal, thinkingMode?: 'off' | 'high' | 'max', logsDir?: string) {
+export type CodeAgentOptions = {
+  model?: ModelConfig
+  abortSignal?: AbortSignal
+  thinkingMode?: 'off' | 'high' | 'max'
+  logsDir?: string
+}
 
-  const agent = new Core({
-    model: model,
-    logsDir: logsDir,
-    abortSignal: abortSignal,
-    thinkingMode: thinkingMode,
-    setContextCallback(context: CodeAgentContext) {
+export default function codeAgent(context: CodeAgentContext, options?: CodeAgentOptions) {
 
-      const projectSummary = readProjectSummary(context.cwd)
-      const skillsMgr = new SkillsManager(context.cwd)
-      const skillSummary = skillsMgr.formatSummary()
+  function initAgent(agent: Core) {
+    const projectSummary = readProjectSummary(context.cwd)
+    const skillsMgr = new SkillsManager(context.cwd)
+    const skillSummary = skillsMgr.formatSummary()
 
-      const combinedAppend = [
-        projectSummary ? `## Project Context\n${projectSummary}` : undefined,
-        skillSummary || undefined,
-      ].filter(Boolean).join("\n\n")
+    const combinedAppend = [
+      projectSummary ? `## Project Context\n${projectSummary}` : undefined,
+      skillSummary || undefined,
+    ].filter(Boolean).join("\n\n")
 
-      const systemPrompt = generateSystemPrompt({
-        todo: true,
-        productName: context.productName,
-        language: 'English',
-        appendSystemPrompt: combinedAppend || undefined,
-      })
+    const systemPrompt = generateSystemPrompt({
+      todo: true,
+      productName: context.productName,
+      language: 'English',
+      appendSystemPrompt: combinedAppend || undefined,
+    })
 
-      agent.setSystem(systemPrompt)
+    agent.setSystem(systemPrompt)
 
-      const filePath = path.join(context.todosDir, `${agent.getSessionId()}.json`)
-      const {
-        todoReadExecutor,
-        todoWriteExecutor,
-      } = createTodoTool({ filePath: filePath })
+    const filePath = path.join(context.todosDir, `${agent.getSessionId()}.json`)
+    const {
+      todoReadExecutor,
+      todoWriteExecutor,
+    } = createTodoTool({ filePath: filePath })
 
-      agent.registerTool('todoRead', todoReadToolSchema)
-      agent.registerToolExecutor('todoRead', todoReadExecutor)
+    agent.registerTool('todoRead', todoReadToolSchema)
+    agent.registerToolExecutor('todoRead', todoReadExecutor)
 
-      agent.registerTool('todoWrite', todoWriteToolSchema)
-      agent.registerToolExecutor('todoWrite', todoWriteExecutor)
+    agent.registerTool('todoWrite', todoWriteToolSchema)
+    agent.registerToolExecutor('todoWrite', todoWriteExecutor)
+  }
+
+  const agent = new Core<CodeAgentContext>({
+    context: context,
+    model: options?.model,
+    logsDir: options?.logsDir,
+    abortSignal: options?.abortSignal,
+    thinkingMode: options?.thinkingMode,
+    onSessionRefresh() {
+      initAgent(agent)
     },
   })
+
+  initAgent(agent)
 
   agent.registerTool('ls', lsToolSchema)
   agent.registerToolExecutor('ls', lsExecutor)

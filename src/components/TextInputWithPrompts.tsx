@@ -6,7 +6,7 @@ import { SuggestionsSelect, type SuggestionsSelectItem } from "./SuggestionsSele
 import { useStoreContext } from "../store/index";
 import StatusBar from "./StatusBar";
 import { Colors } from "../utils/colors";
-import { codeAgent, CodeAgentContext, ModelMessage } from "../agent";
+import { codeAgent, ModelMessage } from "../agent";
 import ModelSelect from "./ModelSelect";
 import { commandRegistry } from "../commands/index";
 import { fuzzySearchFiles, extractFileSearchTerm, replaceFileSearchTerm, FileSearchResult } from "../utils/fileSearch";
@@ -94,16 +94,20 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
       abortControllerRef.current = new AbortController()
       
       const agent = codeAgent({
-        name: modelConfig.model,
-        apiKey: modelConfig.apiKey,
-        baseURL: modelConfig.baseURL
-      }, abortControllerRef.current.signal, thinkingMode, base.logs)
-
-      agent.setContext<CodeAgentContext>({
         cwd: base.cwd,
         productName: base.productName,
         todosDir: base.todosDir,
+      }, {
+        model: {
+          name: modelConfig.model,
+          apiKey: modelConfig.apiKey,
+          baseURL: modelConfig.baseURL
+        },
+        abortSignal: abortControllerRef.current.signal,
+        thinkingMode: thinkingMode,
+        logsDir: base.logs,
       })
+
       setAgent(agent)
     }
   }, [modelConfig])
@@ -125,11 +129,13 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     // 创建新的 abortController
     abortControllerRef.current = new AbortController()
     
-    const agent = codeAgent(undefined, abortControllerRef.current.signal, undefined, base.logs)
-    agent.setContext<CodeAgentContext>({
+    const agent = codeAgent({
       cwd: base.cwd,
       productName: base.productName,
       todosDir: base.todosDir,
+    }, {
+      abortSignal: abortControllerRef.current.signal,
+      logsDir: base.logs,
     })
     setAgent(agent)
   }

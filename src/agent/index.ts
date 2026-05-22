@@ -1,5 +1,5 @@
 import Core from './src/core/index.js';
-import codeAgent, { type CodeAgentContext } from './src/agents/codeAgent.js';
+import codeAgent, { type CodeAgentContext, type CodeAgentOptions } from './src/agents/codeAgent.js';
 import type { LsTool } from './src/tools/ls.js';
 import type { ReadTool } from './src/tools/read.js';
 import type { GlobTool } from './src/tools/glob.js';
@@ -20,6 +20,7 @@ export type {
   ModelMessage,
   StreamEvent,
   CodeAgentContext,
+  CodeAgentOptions,
   LsTool,
   ReadTool,
   GlobTool,

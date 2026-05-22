@@ -71,34 +71,37 @@ export type StreamEvent =
       }
     }
 
-type Config = {
+type Config<TContext = Record<string, any>> = {
   system?: string,
   messages?: ModelMessage[]
-  setContextCallback?: (context: any) => void
   model?: ModelConfig
   abortSignal?: AbortSignal
   /** 思考模式: off 关闭 | high 启用 | max 最大 */
   thinkingMode?: 'off' | 'high' | 'max'
   /** 日志存储目录 (如 ~/.one-coder/logs)，开启后记录每次对话消息 */
   logsDir?: string
+  /** session 刷新时触发（例如重新注册依赖 sessionId 的工具） */
+  onSessionRefresh?: () => void
+  /** 上下文数据，会传给 tool executor */
+  context?: TContext
 }
 
 
-export default class Core {
+export default class Core<TContext = Record<string, any>> {
   private modelName: string
   private messages: ModelMessage[]
   private tools: ToolSet
   private toolExecutors: any
   private system?: string
-  private context?: any
-  private setContextCallback?: (context: any) => void
   private abortSignal?: AbortSignal
   private thinkingMode: 'off' | 'high' | 'max'
   private sessionId: string
   private client: OpenAI
+  private onSessionRefresh?: () => void
+  private context: TContext
   public logger: MessageLogger | null = null
 
-  constructor(config?: Config | undefined) {
+  constructor(config?: Config<TContext> | undefined) {
     this.system = config?.system
 
     const modelName = config?.model?.name ?? CHAT_MODEL_ID
@@ -108,10 +111,10 @@ export default class Core {
     this.tools = {}
 
     this.toolExecutors = {}
-    this.context = {}
-    this.setContextCallback = config?.setContextCallback
     this.abortSignal = config?.abortSignal
     this.thinkingMode = config?.thinkingMode ?? 'max'
+    this.onSessionRefresh = config?.onSessionRefresh
+    this.context = config?.context ?? {} as TContext
 
     this.sessionId = this.createSessionId()
 
@@ -134,17 +137,6 @@ export default class Core {
     });
   }
 
-  setContext<T>(context: T) {
-    this.context = {
-      ...this.context,
-      ...context,
-    }
-
-    if (this.setContextCallback) {
-      this.setContextCallback(this.context)
-    }
-  }
-
   setSystem(system: string) {
     this.system = system
   }
@@ -154,10 +146,10 @@ export default class Core {
   }
 
   refreshSessionId() {
-    if (this.setContextCallback) {
-      this.setContextCallback(this.context)
-    }
-    return this.sessionId = this.createSessionId()
+    const newId = this.createSessionId()
+    this.sessionId = newId
+    this.onSessionRefresh?.()
+    return newId
   }
 
   setAbortSignal(abortSignal: AbortSignal) {
