@@ -40,7 +40,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
   const base = useStoreContext(s => s.base)
 
-  const isPedning = useStoreContext(s => s.bar.isPending)
+  const loading = useStoreContext(s => s.agent.loading)
   const isUserDecison = useStoreContext(s => s.bar.isUserDecison)
   const isResumeMode = useStoreContext(s => s.bar.isResumeMode)
   const resumeInputText = useStoreContext(s => s.bar.resumeInputText)
@@ -52,7 +52,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const latestRef = useLatest({ isResumeMode, visible, currentAgent })
 
 
-  const setPending = useStoreContext(s => s.bar.setPending)
   const pushMessage = useStoreContext(s => s.messageHistory.pushMessage)
   const navigateUp = useStoreContext(s => s.messageHistory.navigateUp)
   const navigateDown = useStoreContext(s => s.messageHistory.navigateDown)
@@ -173,7 +172,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     if (key.escape) {
       if (latest.currentAgent) {
         latest.currentAgent.abort()
-        setPending(false)
       }
     }
     
@@ -228,7 +226,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     setText,
     setVisible,
     setShowModelSelect,
-    setPending,
     pushUIMessage,
     appendMessage: (message: ModelMessage) => {
       currentAgent?.appendMessage(message)
@@ -259,7 +256,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   return (
     <Box flexDirection='column'>
       {
-        !(isPedning || isUserDecison || showModelSelect) && (
+        !(loading || isUserDecison || showModelSelect) && (
           <Box flexDirection="row" borderStyle="round" borderLeft={false} borderRight={false} borderColor={agentMode === 'agent' ? Colors.AccentGreen : Colors.AccentYellow}>
             <Text color={agentMode === 'agent' ? Colors.AccentGreen : Colors.AccentYellow}>{'❯'}</Text>
             <Box width={1} />
@@ -285,7 +282,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                   const resolvedText = resolveAtReferences(submitText, base.cwd)
                   await sendMessage(resolvedText)
                   setText('')
-                  setPending(false)
                 }
               }}
               value={text}

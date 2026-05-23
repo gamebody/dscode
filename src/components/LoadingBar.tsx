@@ -29,13 +29,13 @@ const Timer = () => {
 }
 
 const LoadingBar: React.FC = () => {
-  const isPedning = useStoreContext(s => s.bar.isPending)
+  const loading = useStoreContext(s => s.agent.loading)
   const isApprovalVisible = useStoreContext(s => s.approval.visible)
 
   return (
     <Box flexDirection='row'>
       {
-        isPedning && (
+        loading && (
           <>
             {!isApprovalVisible && <Thinking />}
             <Timer />

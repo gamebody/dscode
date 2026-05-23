@@ -118,7 +118,6 @@ export const stateCreator: StateCreator<
           draft.agent.loading = loading
         })
       })
-      get().bar.setPending(loading)
     },
     async sendMessage(message: string) {
       const { agent, loading } = get().agent

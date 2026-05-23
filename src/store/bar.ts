@@ -4,7 +4,6 @@ import { StateActions } from './index'
 
 
 type State = {
-  isPending: boolean
   /**
    * 用户是否正在做一些确定操作
    */
@@ -30,7 +29,6 @@ type State = {
 }
 
 type Action = {
-  setPending: (isPending: boolean) => void
   setUserDecison: (isUserDecison: boolean) => void
   setUsage: (usage: number) => void
   setTotalUsage: (totalUsage: number) => void
@@ -61,7 +59,6 @@ export type Store = {
 }
 
 const initialValues: State = {
-  isPending: false,
   isUserDecison: false,
   upgradeStateText: '',
   usage: 0,
@@ -84,13 +81,6 @@ export const stateCreator: StateCreator<
 > = (set, get) => ({
   bar: {
     ...initialValues,
-    setPending(isPending) {
-      set((state: Store) => {
-        return produce(state, (draft) => {
-          draft.bar.isPending = isPending
-        })
-      })
-    },
     setUserDecison(isUserDecison) {
       set((state: Store) => {
         return produce(state, (draft) => {

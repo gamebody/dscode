@@ -8,7 +8,6 @@ export interface CommandContext {
   setText: (text: string) => void;
   setVisible: (visible: boolean) => void;
   setShowModelSelect: (show: boolean) => void;
-  setPending: (pending: boolean) => void;
   pushUIMessage: (message: UIMessage) => void;
   appendMessage: (message: ModelMessage) => void;
   runLoop: () => void;
