@@ -137,9 +137,6 @@ export const ResumeFlow: React.FC = () => {
     return (
       <Box flexDirection="column" paddingY={1}>
         <Text color={Colors.Foreground}>没有找到历史会话记录</Text>
-        <Box marginTop={1}>
-          <Text color={Colors.Gray}>按 Esc 返回</Text>
-        </Box>
       </Box>
     )
   }

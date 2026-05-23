@@ -18,7 +18,7 @@ process.on('uncaughtException', (error) => {
       console.error(`\n进程异常退出，错误日志: ${logPath}`)
     })
     .finally(() => {
-      process.exit(1)
+      
     })
 })
 
@@ -29,7 +29,7 @@ process.on('unhandledRejection', (reason) => {
       console.error(`\n未处理的 Promise 拒绝，错误日志: ${logPath}`)
     })
     .finally(() => {
-      process.exit(1)
+      
     })
 })
 
