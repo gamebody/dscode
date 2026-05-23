@@ -1,11 +1,12 @@
 import { BaseCommand, CommandContext } from "../command";
+import os from "os";
 
 export class InitCommand extends BaseCommand {
   name = '/init';
   description = '初始化项目 AI 上下文 (Skill)';
 
   execute(context: CommandContext, input?: string): void {
-    const { appendMessage, setText, pushUIMessage, runLoop } = context;
+    const { appendMessage, setText, pushUIMessage, runLoop, base } = context;
     const fullInput = input || this.name;
 
     const param = fullInput.substring(this.name.length).trim();
@@ -14,6 +15,10 @@ export class InitCommand extends BaseCommand {
       role: 'user',
       content: fullInput
     })
+
+    const platformInfo = `- **操作系统**: ${os.platform()} ${os.release()} (${os.arch()})
+- **运行时**: ${process.version}
+- **项目目录**: ${base.cwd}`;
 
     const prompt = `# Generate Project Skill
 
@@ -58,6 +63,9 @@ description: <一句话项目概述，明确写明何时应调用此skill，使A
 # <项目名>
 
 <1段简介>
+
+## 运行环境
+${platformInfo}
 
 ## Tech Stack
 - <运行时>: <版本>
