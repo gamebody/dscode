@@ -38,12 +38,8 @@ type Action = {
   setExitConfirmState: (state: 'idle' | 'confirming' | 'exiting') => void
   /** 设置 StatusBar 可见性 */
   setIsStatusBarVisible: (visible: boolean) => void
-  /** 设置思考模式 */
-  setThinkingMode: (mode: 'off' | 'high' | 'max') => void
   /** 循环切换思考模式: off -> high -> max -> off */
   cycleThinkingMode: () => void
-  /** 设置 Agent 模式 */
-  setAgentMode: (mode: 'agent' | 'yolo') => void
   /** 切换 Agent 模式: agent <-> yolo */
   cycleAgentMode: () => void
   /** 设置会话恢复模式 */
@@ -130,26 +126,12 @@ export const stateCreator: StateCreator<
         })
       })
     },
-    setThinkingMode(mode) {
-      set((state: Store) => {
-        return produce(state, (draft) => {
-          draft.bar.thinkingMode = mode
-        })
-      })
-    },
     cycleThinkingMode() {
       set((state: Store) => {
         return produce(state, (draft) => {
           const current = draft.bar.thinkingMode
           const next = current === 'off' ? 'high' : current === 'high' ? 'max' : 'off'
           draft.bar.thinkingMode = next
-        })
-      })
-    },
-    setAgentMode(mode) {
-      set((state: Store) => {
-        return produce(state, (draft) => {
-          draft.bar.agentMode = mode
         })
       })
     },
