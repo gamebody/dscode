@@ -37,7 +37,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const highlightValue = useRef<string | null>(null)
 
   const inputRef = useRef<any>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
 
   const base = useStoreContext(s => s.base)
 
@@ -45,13 +44,12 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const isUserDecison = useStoreContext(s => s.bar.isUserDecison)
   const isResumeMode = useStoreContext(s => s.bar.isResumeMode)
   const resumeInputText = useStoreContext(s => s.bar.resumeInputText)
-
-  const latestRef = useLatest({ isResumeMode, visible })
+  const currentAgent = useStoreContext(s => s.agent.agent)
 
 
   const modelConfig = useStoreContext(s => s.userConfig.modelConfig)
         
-  const currentAgent = useStoreContext(s => s.agent.agent)
+  const latestRef = useLatest({ isResumeMode, visible, currentAgent })
 
 
   const setPending = useStoreContext(s => s.bar.setPending)
@@ -113,14 +111,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
   useEffect(() => {
     if (modelConfig.apiKey && modelConfig.baseURL && modelConfig.model) {
-      // 清理之前的 abortController
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-      
-      // 创建新的 abortController
-      abortControllerRef.current = new AbortController()
-      
       const agent = codeAgent({
         cwd: base.cwd,
         productName: base.productName,
@@ -131,7 +121,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
           apiKey: modelConfig.apiKey,
           baseURL: modelConfig.baseURL
         },
-        abortSignal: abortControllerRef.current.signal,
         thinkingMode: thinkingMode,
         logsDir: base.logs,
       })
@@ -149,20 +138,11 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
 
   function useDefaultModel() {
-    // 清理之前的 abortController
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-    
-    // 创建新的 abortController
-    abortControllerRef.current = new AbortController()
-    
     const agent = codeAgent({
       cwd: base.cwd,
       productName: base.productName,
       todosDir: base.todosDir,
     }, {
-      abortSignal: abortControllerRef.current.signal,
       logsDir: base.logs,
     })
     setAgent(agent)
@@ -179,15 +159,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
   }, [visible])
 
-  // 组件卸载时清理 abortController
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-    }
-  }, [])
-
   // 监听 ResumeFlow 设置的输入文本
   useEffect(() => {
     if (resumeInputText !== null) {
@@ -201,17 +172,10 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     const latest = latestRef.current
 
     if (key.escape) {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+      if (latest.currentAgent) {
+        latest.currentAgent.abort()
         setStatusText('操作已取消')
         setPending(false)
-        
-        // 创建新的 abortController 以备下次使用
-        abortControllerRef.current = new AbortController()
-
-        if (currentAgent) {
-          currentAgent.setAbortSignal(abortControllerRef.current.signal)
-        }
       }
     }
     

@@ -351,11 +351,6 @@ export const stateCreator: StateCreator<
           get().agent.setLoading(false)
           break
         } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            get().agent.setLoading(false)
-            get().bar.setStatusText('操作已取消')
-            break
-          }
           throw error
         }
       }

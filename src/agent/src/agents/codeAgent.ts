@@ -30,7 +30,6 @@ export interface CodeAgentContext {
 
 export type CodeAgentOptions = {
   model?: ModelConfig
-  abortSignal?: AbortSignal
   thinkingMode?: 'off' | 'high' | 'max'
   logsDir?: string
 }
@@ -73,7 +72,6 @@ export default function codeAgent(context: CodeAgentContext, options?: CodeAgent
     context: context,
     model: options?.model,
     logsDir: options?.logsDir,
-    abortSignal: options?.abortSignal,
     thinkingMode: options?.thinkingMode,
     onSessionRefresh() {
       initAgent(agent)

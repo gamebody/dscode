@@ -75,7 +75,6 @@ type Config<TContext = Record<string, any>> = {
   system?: string,
   messages?: ModelMessage[]
   model?: ModelConfig
-  abortSignal?: AbortSignal
   /** 思考模式: off 关闭 | high 启用 | max 最大 */
   thinkingMode?: 'off' | 'high' | 'max'
   /** 日志存储目录 (如 ~/.one-coder/logs)，开启后记录每次对话消息 */
@@ -93,7 +92,7 @@ export default class Core<TContext = Record<string, any>> {
   private tools: ToolSet
   private toolExecutors: any
   private system?: string
-  private abortSignal?: AbortSignal
+  private abortController: AbortController
   private thinkingMode: 'off' | 'high' | 'max'
   private sessionId: string
   private logsDir?: string
@@ -112,7 +111,7 @@ export default class Core<TContext = Record<string, any>> {
     this.tools = {}
 
     this.toolExecutors = {}
-    this.abortSignal = config?.abortSignal
+    this.abortController = new AbortController()
     this.thinkingMode = config?.thinkingMode ?? 'max'
     this.onSessionRefresh = config?.onSessionRefresh
     this.context = config?.context ?? {} as TContext
@@ -162,8 +161,9 @@ export default class Core<TContext = Record<string, any>> {
     return newId
   }
 
-  setAbortSignal(abortSignal: AbortSignal) {
-    this.abortSignal = abortSignal
+  abort() {
+    this.abortController.abort()
+    this.abortController = new AbortController()
   }
 
   setThinkingMode(mode: 'off' | 'high' | 'max') {
@@ -276,7 +276,7 @@ export default class Core<TContext = Record<string, any>> {
           ...(thinkingParam ?? {}),
         },
         {
-          signal: this.abortSignal,
+          signal: this.abortController.signal,
           body: {
             model: this.modelName,
             messages: requestMessages,
