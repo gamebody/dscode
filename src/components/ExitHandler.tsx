@@ -9,7 +9,6 @@ const ExitHandler: React.FC = () => {
   const exitConfirmState = useStoreContext(s => s.bar.exitConfirmState);
   const setExitConfirmState = useStoreContext(s => s.bar.setExitConfirmState);
   const setIsStatusBarVisible = useStoreContext(s => s.bar.setIsStatusBarVisible);
-  const setStatusText = useStoreContext(s => s.bar.setStatusText);
   const totalUsage = useStoreContext(s => s.bar.totalUsage);
   const sessionId = useStoreContext(s => s.bar.sessionId);
   const logsDir = useStoreContext(s => s.base.logs);
@@ -30,7 +29,6 @@ const ExitHandler: React.FC = () => {
   const resetExitConfirm = () => {
     setExitConfirmState('idle');
     setIsStatusBarVisible(true);
-    setStatusText('');
     clearExitTimeout();
   };
 
@@ -58,8 +56,7 @@ const ExitHandler: React.FC = () => {
         // 第一次按 Ctrl+C
         setExitConfirmState('confirming');
         setIsStatusBarVisible(false);
-        setStatusText('再按一次 Ctrl+C 退出');
-        
+
         // 设置超时重置
         clearExitTimeout();
         timeoutRef.current = setTimeout(() => {

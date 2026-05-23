@@ -9,7 +9,6 @@ type State = {
    * 用户是否正在做一些确定操作
    */
   isUserDecison: boolean
-  statusText: string
   /** 上一次所消耗的tokens */
   usage: number
   /** 当前会话的总使用量 */
@@ -33,7 +32,6 @@ type State = {
 type Action = {
   setPending: (isPending: boolean) => void
   setUserDecison: (isUserDecison: boolean) => void
-  setStatusText: (text: string) => void
   setUsage: (usage: number) => void
   setTotalUsage: (totalUsage: number) => void
   setUpgradeStateText: (text: string) => void
@@ -65,7 +63,6 @@ export type Store = {
 const initialValues: State = {
   isPending: false,
   isUserDecison: false,
-  statusText: '',
   upgradeStateText: '',
   usage: 0,
   totalUsage: 0,
@@ -98,13 +95,6 @@ export const stateCreator: StateCreator<
       set((state: Store) => {
         return produce(state, (draft) => {
           draft.bar.isUserDecison = isUserDecison
-        })
-      })
-    },
-    setStatusText(text) {
-      set((state: Store) => {
-        return produce(state, (draft) => {
-          draft.bar.statusText = text
         })
       })
     },

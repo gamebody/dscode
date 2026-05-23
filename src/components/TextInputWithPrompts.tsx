@@ -61,7 +61,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   
   const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
   const agentMode = useStoreContext(s => s.bar.agentMode)
-  const setStatusText = useStoreContext(s => s.bar.setStatusText)
   const setSessionId = useStoreContext(s => s.bar.setSessionId)
   const barReset = useStoreContext(s => s.bar.reset)
   const setExitConfirmState = useStoreContext(s => s.bar.setExitConfirmState)
@@ -174,7 +173,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     if (key.escape) {
       if (latest.currentAgent) {
         latest.currentAgent.abort()
-        setStatusText('操作已取消')
         setPending(false)
       }
     }
@@ -230,7 +228,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     setText,
     setVisible,
     setShowModelSelect,
-    setStatusText,
     setPending,
     pushUIMessage,
     appendMessage: (message: ModelMessage) => {
@@ -288,7 +285,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                   const resolvedText = resolveAtReferences(submitText, base.cwd)
                   await sendMessage(resolvedText)
                   setText('')
-                  setStatusText('')
                   setPending(false)
                 }
               }}
@@ -383,7 +379,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
           <ModelSelect
             onSubmit={() => {
               setShowModelSelect(false)
-              setStatusText('模型配置已更新')
             }}
             onCancel={() => {
               setShowModelSelect(false)

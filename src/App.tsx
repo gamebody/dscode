@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { checkAndUpdate } from './utils/versionCheck';
 import StatusBar from './components/StatusBar';
+import LoadingBar from './components/LoadingBar';
 
 const App = () => {
 
@@ -37,6 +38,7 @@ const App = () => {
       {
         isResumeMode && <ResumeFlow />
       }
+      <LoadingBar />
       <StatusBar />
       <ExitHandler />
       <Box height={2}></Box>
