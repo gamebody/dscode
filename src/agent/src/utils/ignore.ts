@@ -172,8 +172,8 @@ function matchesPattern(filePath: string, pattern: string): boolean {
     const parts = pattern.split('**');
     if (parts.length === 2) {
       const [prefix, suffix] = parts;
-      const prefixMatch = prefix === '' || filePath.startsWith(prefix);
-      const suffixMatch = suffix === '' || filePath.endsWith(suffix);
+      const prefixMatch = (prefix ?? '') === '' || filePath.startsWith(prefix ?? '');
+      const suffixMatch = (suffix ?? '') === '' || filePath.endsWith(suffix ?? '');
       return prefixMatch && suffixMatch;
     }
   }

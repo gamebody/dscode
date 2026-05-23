@@ -117,8 +117,8 @@ function parseDiffWithLineNumbers(diffContent: string): DiffLine[] {
   for (const line of lines) {
     const hunkMatch = line.match(hunkHeaderRegex);
     if (hunkMatch) {
-      currentOldLine = parseInt(hunkMatch[1], 10);
-      currentNewLine = parseInt(hunkMatch[2], 10);
+      currentOldLine = parseInt(hunkMatch[1]!, 10);
+      currentNewLine = parseInt(hunkMatch[2]!, 10);
       inHunk = true;
       result.push({ type: 'hunk', content: line });
       currentOldLine--;

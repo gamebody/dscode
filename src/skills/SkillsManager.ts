@@ -100,8 +100,8 @@ export class SkillsManager {
       for (const line of frontmatterLines) {
         const match = line.match(/^(\w+):\s*(.*)$/);
         if (match) {
-          const key = match[1].trim();
-          const value = match[2].trim();
+          const key = (match[1] ?? "").trim();
+          const value = (match[2] ?? "").trim();
           if (key === "name") meta.name = value;
           if (key === "description") meta.description = value;
         }

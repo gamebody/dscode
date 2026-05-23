@@ -63,7 +63,7 @@ const Approval: FC = () => {
     }
 
     if (key.return) {
-      const decision = options[selectedIndex].value;
+      const decision = options[selectedIndex]!.value;
       handleDecision(decision);
     }
 

@@ -37,7 +37,7 @@ function renderHastNode(
 
     // Find color defined specifically for this element's class
     for (let i = nodeClasses.length - 1; i >= 0; i--) {
-      const color = theme.getInkColor(nodeClasses[i]);
+      const color = theme.getInkColor(nodeClasses[i]!);
       if (color) {
         elementColor = color;
         break;

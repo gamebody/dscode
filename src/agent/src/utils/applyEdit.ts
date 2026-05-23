@@ -28,25 +28,25 @@ function levenshtein(a: string, b: string): number {
     matrix[i] = [i];
   }
   for (let j = 0; j <= a.length; j++) {
-    matrix[0][j] = j;
+    matrix[0]![j] = j;
   }
 
   // Fill matrix
   for (let i = 1; i <= b.length; i++) {
     for (let j = 1; j <= a.length; j++) {
       if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
+        matrix[i]![j] = matrix[i - 1]![j - 1]!;
       } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1, // insertion
-          matrix[i - 1][j] + 1, // deletion
+        matrix[i]![j] = Math.min(
+          matrix[i - 1]![j - 1]! + 1, // substitution
+          matrix[i]![j - 1]! + 1, // insertion
+          matrix[i - 1]![j]! + 1, // deletion
         );
       }
     }
   }
 
-  return matrix[b.length][a.length];
+  return matrix[b.length]![a.length]!;
 }
 
 /**
@@ -62,7 +62,7 @@ function tryLineTrimmedMatch(content: string, oldStr: string): string | null {
   for (let i = 0; i <= contentLines.length - searchLines.length; i++) {
     let isMatch = true;
     for (let j = 0; j < searchLines.length; j++) {
-      if (contentLines[i + j].trim() !== searchLines[j].trim()) {
+      if (contentLines[i + j]!.trim() !== searchLines[j]!.trim()) {
         isMatch = false;
         break;
       }
@@ -75,7 +75,7 @@ function tryLineTrimmedMatch(content: string, oldStr: string): string | null {
   }
 
   if (matches.length === 1) {
-    return matches[0];
+    return matches[0]!;
   }
 
   return null;
@@ -102,17 +102,17 @@ function tryBlockAnchorMatch(content: string, oldStr: string): string | null {
     return null;
   }
 
-  const firstLine = searchLines[0].trim();
-  const lastLine = searchLines[searchLines.length - 1].trim();
+  const firstLine = searchLines[0]!.trim();
+  const lastLine = searchLines[searchLines.length - 1]!.trim();
 
   // Collect all candidates where first and last lines match
   const candidates: Array<{ startLine: number; endLine: number }> = [];
 
   for (let i = 0; i < contentLines.length; i++) {
-    if (contentLines[i].trim() !== firstLine) continue;
+    if (contentLines[i]!.trim() !== firstLine) continue;
 
     for (let j = i + 2; j < contentLines.length; j++) {
-      if (contentLines[j].trim() === lastLine) {
+      if (contentLines[j]!.trim() === lastLine) {
         candidates.push({ startLine: i, endLine: j });
       }
     }
@@ -135,8 +135,8 @@ function tryBlockAnchorMatch(content: string, oldStr: string): string | null {
     let totalSimilarity = 0;
 
     for (let k = 1; k <= middleLines; k++) {
-      const contentLine = contentLines[candidate.startLine + k];
-      const searchLine = searchLines[k];
+      const contentLine = contentLines[candidate.startLine + k]!;
+      const searchLine = searchLines[k]!;
       const maxLen = Math.max(contentLine.length, searchLine.length);
 
       if (maxLen === 0) {
@@ -152,7 +152,7 @@ function tryBlockAnchorMatch(content: string, oldStr: string): string | null {
 
   // Single candidate scenario - use more lenient threshold
   if (candidates.length === 1) {
-    const candidate = candidates[0];
+    const candidate = candidates[0]!;
     const similarity = calculateSimilarity(candidate);
 
     if (similarity >= SINGLE_CANDIDATE_SIMILARITY_THRESHOLD) {
@@ -211,7 +211,7 @@ function tryWhitespaceNormalizedMatch(
   }
 
   if (matches.length === 1) {
-    return matches[0];
+    return matches[0]!;
   }
 
   // Multi-line matching
@@ -225,7 +225,7 @@ function tryWhitespaceNormalizedMatch(
       }
     }
     if (multiLineMatches.length === 1) {
-      return multiLineMatches[0];
+      return multiLineMatches[0]!;
     }
   }
 
@@ -307,8 +307,8 @@ function removeCommonIndentation(text: string): string {
   // Find minimum indentation
   const minIndent = Math.min(
     ...nonEmptyLines.map((line) => {
-      const match = line.match(/^(\s*)/);
-      return match ? match[1].length : 0;
+      const match = line.match(/^(\\s*)/);
+      return match ? match[1]!.length : 0;
     }),
   );
 
@@ -340,7 +340,7 @@ function tryIndentationFlexibleMatch(
   }
 
   if (matches.length === 1) {
-    return matches[0];
+    return matches[0]!;
   }
 
   return null;
@@ -463,7 +463,7 @@ export function applyEdits(
     if (
       error.code === 'ENOENT' &&
       edits.length === 1 &&
-      edits[0].old_string === ''
+      edits[0]!.old_string === ''
     ) {
       fileContents = '';
     } else {

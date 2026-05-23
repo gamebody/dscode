@@ -217,7 +217,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     
     // Tab 键处理：当有可见建议时，选择第一个建议
     if (key.tab && latest.visible && items.length > 0) {
-      const firstItem = items[0];
+      const firstItem = items[0]!;
       if (isFileSearch) {
         // 文件搜索模式：替换@搜索词为完整路径
         const newText = replaceFileSearchTerm(text, fileSearchTerm, firstItem.value)

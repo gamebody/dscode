@@ -314,7 +314,6 @@ export const stateCreator: StateCreator<
                 role: 'tool' as const,
                 content: {
                   toolCallId: tc.id,
-                  toolName: tc.function.name,
                   name: tc.function.name,
                   input: bridge.input,
                   state: 'done' as const,

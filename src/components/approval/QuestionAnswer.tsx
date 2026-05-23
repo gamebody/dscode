@@ -35,7 +35,12 @@ const QuestionAnswer: React.FC<QuestionAnswerProps> = ({ questions, onAnswer }) 
   const [validationError, setValidationError] = useState<string>('');
   const answerInputRef = useRef<any>(null);
 
-  const currentQuestion = questions[currentQuestionIndex];
+  // Guard: if no questions provided, render nothing
+  if (!questions || questions.length === 0) {
+    return null;
+  }
+
+  const currentQuestion = questions[currentQuestionIndex]!;
   const currentSelected = selectedOptions[currentQuestionIndex] || [];
   const currentCustomAnswer = customAnswers[currentQuestionIndex] || '';
   const currentShowCustom = showCustomInput[currentQuestionIndex] || false;
@@ -122,8 +127,8 @@ const QuestionAnswer: React.FC<QuestionAnswerProps> = ({ questions, onAnswer }) 
     } else {
       // 所有问题已回答，生成最终答案
       const answers = questions.map((q, idx) => {
-        const selected = selectedOptions[idx];
-        const custom = customAnswers[idx];
+        const selected = selectedOptions[idx]!;
+        const custom = customAnswers[idx]!;
         const showCustom = showCustomInput[idx];
         
         if (showCustom && custom.trim()) {
@@ -134,11 +139,11 @@ const QuestionAnswer: React.FC<QuestionAnswerProps> = ({ questions, onAnswer }) 
           return '';
         }
         
-        const selectedLabels = selected.map(i => q.options[i].label);
+        const selectedLabels = selected.map(i => q.options?.[i]?.label ?? '');
         return selectedLabels.join(', ');
       });
       
-      onAnswer(answers.map((a, idx) => ({ q: questions[idx].question, a })));
+      onAnswer(answers.map((a, idx) => ({ q: questions[idx]!.question, a })));
     }
   };
 
@@ -216,7 +221,9 @@ const QuestionAnswer: React.FC<QuestionAnswerProps> = ({ questions, onAnswer }) 
     // 空格键切换多选
     if (input === ' ' && currentQuestion.multiSelect && currentSelected.length > 0) {
       const lastSelected = currentSelected[currentSelected.length - 1];
-      handleOptionToggle(lastSelected);
+      if (lastSelected !== undefined) {
+        handleOptionToggle(lastSelected);
+      }
     }
   });
 
@@ -361,7 +368,7 @@ const QuestionAnswer: React.FC<QuestionAnswerProps> = ({ questions, onAnswer }) 
               currentShowCustom 
                 ? `自定义: "${currentCustomAnswer || '未输入'}"`
                 : currentSelected.length > 0
-                  ? currentSelected.map(i => currentQuestion.options[i].label).join(', ')
+                  ? currentSelected.map(i => currentQuestion.options?.[i]?.label ?? '').join(', ')
                   : '未选择'
             }
           </Text>

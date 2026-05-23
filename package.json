@@ -33,13 +33,10 @@
     "tar": "^7.5.2",
     "tsx": "^4.21.0",
     "type-fest": "^4.41.0",
-    "typescript": "^5.8.3",
+    "typescript": "^6.0.3",
     "yargs": "^17.7.2",
     "zod": "3.25.76",
     "zustand": "^5.0.6"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   },
   "bin": {
     "dscode": "bundle/dscode.js"
@@ -53,7 +50,7 @@
     "build:post": "bun scripts/post-build.ts",
     "dev": "bun --watch ./index.tsx",
     "sfe": "bun build --compile --external react-devtools-core --target=bun-darwin-arm64 ./index.tsx --outfile one",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc -p ./ --noEmit"
   },
   "type": "module"
 }

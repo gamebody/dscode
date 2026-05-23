@@ -40,7 +40,7 @@ const Thinking: React.FC<ThinkingProps> = ({
     return Math.max(...words.map(word => word.length));
   }, [words]);
 
-  const currentWord = words[currentWordIndex];
+  const currentWord = words[currentWordIndex]!;
 
   useEffect(() => {
     const wordInterval = setInterval(() => {
@@ -76,7 +76,7 @@ const Thinking: React.FC<ThinkingProps> = ({
   const renderColoredText = (text: string) => {
     return text.split('').map((char, index) => {
       const color = getRandomColor();
-      return color(char);
+      return color?.(char) ?? char;
     }).join('');
   };
 

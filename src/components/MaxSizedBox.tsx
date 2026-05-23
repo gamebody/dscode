@@ -413,7 +413,7 @@ function layoutInkElementAsStyledText(
     if (
       currentLine.length > 0 ||
       (nonWrappingContent.length > 0 &&
-        nonWrappingContent[nonWrappingContent.length - 1].text.endsWith('\n'))
+        nonWrappingContent[nonWrappingContent.length - 1]?.text.endsWith('\n'))
     ) {
       lines.push(currentLine);
     }
@@ -453,11 +453,9 @@ function layoutInkElementAsStyledText(
   }
 
   function addToWrappingPart(text: string, props: Record<string, unknown>) {
-    if (
-      wrappingPart.length > 0 &&
-      wrappingPart[wrappingPart.length - 1].props === props
-    ) {
-      wrappingPart[wrappingPart.length - 1].text += text;
+    const last = wrappingPart[wrappingPart.length - 1];
+    if (last && last.props === props) {
+      last.text += text;
     } else {
       wrappingPart.push({ text, props });
     }
