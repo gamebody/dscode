@@ -11,7 +11,7 @@ const ThinkingBlock: React.FC<{
   isStreaming: boolean;
   terminalWidth: number;
   terminalHeight?: number;
-}> = ({ content, terminalWidth }) => {
+}> = ({ content, isStreaming, terminalWidth }) => {
   const lines = useMemo(() => content.split("\n"), [content]);
 
   const maxHeight = MAX_VISIBLE_LINES + 1;
@@ -25,9 +25,9 @@ const ThinkingBlock: React.FC<{
       maxHeight={maxHeight + 3}
     >
       <Box>
-        <Text color={Colors.AccentGreen}>✦ </Text>
+        <Text color={Colors.AccentGreen}>✦ thinking</Text>
         <Gradient name="rainbow">
-          <Text>thinking</Text>
+          <Text></Text>
         </Gradient>
       </Box>
       <Box marginLeft={2}>
@@ -38,7 +38,9 @@ const ThinkingBlock: React.FC<{
         >
           {lines.map((line, i) => (
             <Box key={i}>
-              <Text wrap="wrap">{line}</Text>
+              <Text wrap="wrap" color={isStreaming ? Colors.Foreground : Colors.Comment}>
+                {line}
+              </Text>
             </Box>
           ))}
         </MaxSizedBox>

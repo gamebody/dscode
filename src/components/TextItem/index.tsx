@@ -7,6 +7,7 @@ import { MarkdownDisplay } from "../../utils/MarkdownDisplay";
 import { DiffViewer } from "../DiffViewer";
 import { TOOL_NAMES } from "../../agent/src/utils/constants";
 import ThinkingBlock from "./ThinkingBlock";
+import Gradient from "ink-gradient";
 
 const STATUS_ICONS: Record<string, string> = {
   completed: "✓",
@@ -168,12 +169,21 @@ const TextItem: React.FC<TextItemProps> = ({
         return <UserText text={content} />;
       case "assistant":
         return (
-          <MarkdownDisplay
-            availableTerminalHeight={terminalHeight}
-            text={content as string}
-            isPending={!!isStreaming}
-            terminalWidth={terminalWidth ?? 80}
-          />
+          <Box marginY={1} flexDirection="column">
+            <Box flexDirection='row'>
+              <Gradient name='rainbow'>
+                <Text>✦ ONECODE</Text>
+              </Gradient>
+            </Box>
+            <Box flexDirection="column" marginLeft={2}>
+              <MarkdownDisplay
+                availableTerminalHeight={terminalHeight}
+                text={content as string}
+                isPending={!!isStreaming}
+                terminalWidth={terminalWidth ?? 80}
+              />
+            </Box>
+          </Box>
         );
       case "thinking":
         return (
