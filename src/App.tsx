@@ -4,7 +4,6 @@ import History from './components/History'
 import TextInputWithPrompts from './components/TextInputWithPrompts';
 import Approval from './components/approval/index';
 import ExitHandler from './components/ExitHandler';
-import ResumeFlow from './components/ResumeFlow';
 import { useStoreContext } from './store/index';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -35,9 +34,6 @@ const App = () => {
       <History />
       <Approval />
       <TextInputWithPrompts />
-      {
-        isResumeMode && <ResumeFlow />
-      }
       <LoadingBar />
       <StatusBar />
       <ExitHandler />

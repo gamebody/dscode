@@ -69,7 +69,7 @@ export class SessionManager {
               const content = typeof raw === 'string'
                 ? raw
                 : raw ? JSON.stringify(raw) ?? '' : ''
-              firstMessage = content.length > 80 ? content.slice(0, 80) + '...' : content
+              firstMessage = content
             }
           } catch {
             // skip corrupted lines

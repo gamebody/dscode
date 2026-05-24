@@ -13,6 +13,7 @@ import { fuzzySearchFiles, extractFileSearchTerm, replaceFileSearchTerm, FileSea
 import resolveAtReferences from "../utils/resolveAtReferences";
 import { useLatest } from "../hooks/useLatest";
 import { SessionManager } from "../session/SessionManager";
+import ResumeSelect from "./ResumeSelect";
 
 
 export type TextInputWithPromptsProps = {
@@ -43,7 +44,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const loading = useStoreContext(s => s.agent.loading)
   const isUserDecison = useStoreContext(s => s.bar.isUserDecison)
   const isResumeMode = useStoreContext(s => s.bar.isResumeMode)
-  const resumeInputText = useStoreContext(s => s.bar.resumeInputText)
   const currentAgent = useStoreContext(s => s.agent.agent)
 
 
@@ -135,18 +135,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   }, [thinkingMode, currentAgent])
 
 
-  function useDefaultModel() {
-    const agent = codeAgent({
-      cwd: base.cwd,
-      productName: base.productName,
-      todosDir: base.todosDir,
-    }, {
-      logsDir: base.logs,
-    })
-    setAgent(agent)
-  }
-
-
   useEffect(() => {
     if (!visible) {
       const commands = commandRegistry.getAllCommands();
@@ -156,14 +144,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
       })));
     }
   }, [visible])
-
-  // 监听 ResumeFlow 设置的输入文本
-  useEffect(() => {
-    if (resumeInputText !== null) {
-      setText(resumeInputText)
-      inputRef.current?.setCursorOffset(resumeInputText.length)
-    }
-  }, [resumeInputText])
 
   // ESC 按键监听，用于取消当前操作
   useInput((input, key) => {
@@ -378,6 +358,21 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
             }}
             onCancel={() => {
               setShowModelSelect(false)
+            }}
+          />
+        )
+      }
+      {
+        isResumeMode && (
+          <ResumeSelect
+            onHighlight={(session) => {
+              const newText = `/resume ${session.sessionId}`
+              setText(newText)
+              inputRef.current?.setCursorOffset(newText.length)
+            }}
+            onSelect={(session) => {
+              restoreSession(session.filePath, session.sessionId)
+              setText('')
             }}
           />
         )
