@@ -52,7 +52,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
 
   const modelConfig = useStoreContext(s => s.userConfig.modelConfig)
-        
+
   const latestRef = useLatest({ isResumeMode, visible, currentAgent, useInputEnabled })
 
 
@@ -61,7 +61,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const navigateDown = useStoreContext(s => s.messageHistory.navigateDown)
   const resetNavigation = useStoreContext(s => s.messageHistory.resetNavigation)
   const firstMessageRecorded = useRef(false)
-  
+
   const thinkingMode = useStoreContext(s => s.bar.thinkingMode)
   const agentMode = useStoreContext(s => s.bar.agentMode)
   const setSessionId = useStoreContext(s => s.bar.setSessionId)
@@ -162,7 +162,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         latest.currentAgent.abort()
       }
     }
-    
+
     // Tab 键处理：当有可见建议时，选择第一个建议
     if (key.tab && latest.visible && items.length > 0) {
       const firstItem = items[0]!;
@@ -177,7 +177,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         // 命令模式：在命令后添加空格，允许输入参数
         let newText = firstItem.value + ' '
         if (highlightValue.current) {
-          newText = highlightValue.current  + ' '
+          newText = highlightValue.current + ' '
         }
         setText(newText)
         setVisible(false)
@@ -265,7 +265,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                 resetNavigation()
 
                 const isCommand = await commandRegistry.executeCommand(submitText, context);
-                
+
                 if (!isCommand) {
                   const resolvedText = resolveAtReferences(submitText, base.cwd)
                   await sendMessage(resolvedText)
@@ -293,7 +293,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
                 if (searchTerm !== null || value[value.length - 1] == '@') {
                   setFileSearchTerm(searchTerm || '')
                   setIsFileSearch(true)
-                  
+
                   // 搜索文件和目录（空字符串也会返回全部文件）
                   const searchResults = await fuzzySearchFiles(searchTerm || '', base.cwd)
                   if (searchResults.length > 0) {
@@ -323,39 +323,37 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
       }
       {
         visible && (
-          <Box borderStyle="round" borderColor={Colors.AccentBlue} borderLeft={false} borderRight={false} borderTop={false}>
-            <SuggestionsSelect
-              items={items}
-              initialIndex={0}
-              onSelect={async (value: string) => {
-                if (isFileSearch) {
-                  // 文件搜索模式：替换@搜索词为完整路径
-                  const newText = replaceFileSearchTerm(text, fileSearchTerm, value)
-                  setText(newText)
-                  setVisible(false)
-                  setIsFileSearch(false)
-                  inputRef.current.setCursorOffset(newText.length)
-                } else {
-                  // 命令模式：在命令后添加空格，允许输入参数
-                  const newText = value + ' '
-                  setText(newText)
-                  setVisible(false)
-                  inputRef.current.setCursorOffset(newText.length)
+          <SuggestionsSelect
+            items={items}
+            initialIndex={0}
+            onSelect={async (value: string) => {
+              if (isFileSearch) {
+                // 文件搜索模式：替换@搜索词为完整路径
+                const newText = replaceFileSearchTerm(text, fileSearchTerm, value)
+                setText(newText)
+                setVisible(false)
+                setIsFileSearch(false)
+                inputRef.current.setCursorOffset(newText.length)
+              } else {
+                // 命令模式：在命令后添加空格，允许输入参数
+                const newText = value + ' '
+                setText(newText)
+                setVisible(false)
+                inputRef.current.setCursorOffset(newText.length)
 
-                  if (newText === '/resume ') {
-                    setResumeMode(true)
-                    return
-                  }
+                if (newText === '/resume ') {
+                  setResumeMode(true)
+                  return
                 }
-              }}
-              onHighlight={(value) => {
-                highlightValue.current = value
-              }}
-              isFocused={true}
-              showScrollArrows={true}
-              maxItemsToShow={7}
-              filterable={false} />
-          </Box>
+              }
+            }}
+            onHighlight={(value) => {
+              highlightValue.current = value
+            }}
+            isFocused={true}
+            showScrollArrows={true}
+            maxItemsToShow={7}
+            filterable={false} />
         )
       }
       {

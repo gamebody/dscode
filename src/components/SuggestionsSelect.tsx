@@ -137,7 +137,7 @@ export function SuggestionsSelect<T>({
         }
 
         return (
-          <Box key={item.label}>
+          <Box key={item.label} marginLeft={2}>
             {item.themeNameDisplay && item.themeTypeDisplay ? (
               <Text color={textColor} wrap="truncate">
                 {item.themeNameDisplay}{' '}
@@ -152,7 +152,7 @@ export function SuggestionsSelect<T>({
         );
       })}
       <Text color={Colors.AccentGreen}>
-        - {activeIndex+1}/{items.length} -
+        {'  '}- {activeIndex+1}/{items.length} -
       </Text>
     </Box>
   );
