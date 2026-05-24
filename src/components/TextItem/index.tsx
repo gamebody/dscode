@@ -1,14 +1,12 @@
-import React, { ReactElement, ReactNode, useMemo } from "react";
+import React, { ReactElement, ReactNode } from "react";
 import { Box, Text } from "ink";
 import { ReturnDisplay, Tool, UIMessage } from "../../store/agent";
 import UserText from "./UserText";
 import { Colors } from "../../utils/colors";
-import Gradient from "ink-gradient";
 import { MarkdownDisplay } from "../../utils/MarkdownDisplay";
 import { DiffViewer } from "../DiffViewer";
 import { TOOL_NAMES } from "../../agent/src/utils/constants";
-
-const MAX_VISIBLE_LINES = 3;
+import ThinkingBlock from "./ThinkingBlock";
 
 const STATUS_ICONS: Record<string, string> = {
   completed: "✓",
@@ -89,44 +87,6 @@ const ToolDisplay = ({ name, input, output }: ToolDisplayProps) => (
     </Box>
   </Box>
 );
-
-const ThinkingBlock: React.FC<{
-  content: string;
-  isStreaming: boolean;
-  terminalWidth: number;
-  terminalHeight?: number;
-}> = ({ content, isStreaming, terminalWidth, terminalHeight }) => {
-  const lines = useMemo(() => content.split("\n"), [content]);
-  const visibleLines = useMemo(() => lines.slice(-MAX_VISIBLE_LINES), [lines]);
-  const hiddenCount = lines.length - visibleLines.length;
-  const text = hiddenCount > 0 ? visibleLines.join("\n") : content;
-
-  return (
-    <Box
-      borderStyle="round"
-      borderColor={Colors.Gray}
-      flexDirection="column"
-      paddingX={1}
-      paddingY={0}
-      marginY={1}
-    >
-      <Box>
-        <Gradient name="rainbow">
-          <Text>thinking</Text>
-        </Gradient>
-      </Box>
-      {hiddenCount > 0 && (
-        <Text color={Colors.Gray}>... {hiddenCount} lines collapsed</Text>
-      )}
-      <MarkdownDisplay
-        availableTerminalHeight={terminalHeight}
-        text={text}
-        isPending={isStreaming}
-        terminalWidth={terminalWidth}
-      />
-    </Box>
-  );
-};
 
 const renderTool = (tool: Tool["content"]): ReactElement => {
   const returnDisplay: ReturnDisplay | undefined = tool.returnDisplay;
