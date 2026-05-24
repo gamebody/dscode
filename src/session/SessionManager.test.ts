@@ -240,17 +240,15 @@ describe("SessionManager", () => {
   });
 
   describe("loadSession", () => {
-    it("should return correct sessionId from file path", async () => {
+    it("should return correct sessionId", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-15", "session-1.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("session-1");
       expect(result.sessionId).toBe("session-1");
     });
 
     it("should parse user messages correctly", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-15", "session-2.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("session-2");
 
       expect(result.messages.length).toBe(1);
       expect(result.uiMessages.length).toBe(1);
@@ -260,8 +258,7 @@ describe("SessionManager", () => {
 
     it("should parse assistant messages with content", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-15", "session-1.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("session-1");
 
       const assistantMsgs = result.uiMessages.filter((m) => m.role === "assistant");
       expect(assistantMsgs.length).toBe(1);
@@ -270,8 +267,7 @@ describe("SessionManager", () => {
 
     it("should handle assistant messages with reasoning_content", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-16", "tool-session.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-session");
 
       const thinkingMsgs = result.uiMessages.filter((m) => m.role === "thinking");
       expect(thinkingMsgs.length).toBe(1);
@@ -280,8 +276,7 @@ describe("SessionManager", () => {
 
     it("should handle assistant messages with tool_calls and no content", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-16", "tool-session.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-session");
 
       // tool_calls assistant should not create a uiMessage with null content
       const assistantMsgs = result.uiMessages.filter((m) => m.role === "assistant");
@@ -292,8 +287,7 @@ describe("SessionManager", () => {
 
     it("should parse tool messages with correct fields", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-16", "tool-session.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-session");
 
       const toolMsgs = result.uiMessages.filter((m) => m.role === "tool");
       expect(toolMsgs.length).toBe(1);
@@ -333,8 +327,7 @@ describe("SessionManager", () => {
         },
       ]);
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-17", "tool-obj-content.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-obj-content");
 
       const toolMsgs = result.uiMessages.filter((m) => m.role === "tool");
       expect(toolMsgs.length).toBe(1);
@@ -368,8 +361,7 @@ describe("SessionManager", () => {
         },
       ]);
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-17", "tool-json-content.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-json-content");
 
       const toolMsgs = result.uiMessages.filter((m) => m.role === "tool");
       expect(toolMsgs.length).toBe(1);
@@ -389,8 +381,7 @@ describe("SessionManager", () => {
         },
       ]);
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-17", "tool-unknown-id.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-unknown-id");
 
       const toolMsgs = result.uiMessages.filter((m) => m.role === "tool");
       expect(toolMsgs.length).toBe(1);
@@ -400,8 +391,7 @@ describe("SessionManager", () => {
 
     it("should handle corrupted lines by skipping them", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-16", "corrupted-session.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("corrupted-session");
 
       expect(result.messages.length).toBe(1);
       expect(result.uiMessages.length).toBe(1);
@@ -409,8 +399,7 @@ describe("SessionManager", () => {
 
     it("should handle empty files", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-16", "empty-session.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("empty-session");
 
       expect(result.sessionId).toBe("empty-session");
       expect(result.messages).toEqual([]);
@@ -444,8 +433,7 @@ describe("SessionManager", () => {
         },
       ]);
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-17", "tool-with-return.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-with-return");
 
       const toolMsgs = result.uiMessages.filter((m) => m.role === "tool");
       expect(toolMsgs.length).toBe(1);
@@ -479,8 +467,7 @@ describe("SessionManager", () => {
         },
       ]);
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-17", "bad-args.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("bad-args");
 
       const toolMsgs = result.uiMessages.filter((m) => m.role === "tool");
       expect(toolMsgs.length).toBe(1);
@@ -496,8 +483,7 @@ describe("SessionManager", () => {
         },
       ]);
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-17", "array-content.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("array-content");
 
       expect(result.uiMessages[0]!.role).toBe("user");
       expect(result.uiMessages[0]!.content).toBe('[{"type":"text","text":"hello"}]');
@@ -511,8 +497,7 @@ describe("SessionManager", () => {
         },
       ]);
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-17", "assistant-array.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("assistant-array");
 
       const assistantMsgs = result.uiMessages.filter((m) => m.role === "assistant");
       expect(assistantMsgs.length).toBe(1);
@@ -521,8 +506,7 @@ describe("SessionManager", () => {
 
     it("should preserve all ModelMessage entries in messages array", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-16", "tool-session.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-session");
 
       expect(result.messages.length).toBe(4);
       expect(result.messages[0]!.role).toBe("user");
@@ -533,8 +517,7 @@ describe("SessionManager", () => {
 
     it("should sort tool_calls uiMessages correctly: thinking, tool, assistant", async () => {
       const mgr = new SessionManager(testDir);
-      const filePath = path.join(testDir, "2025-01-16", "tool-session.jsonl");
-      const result = await mgr.loadSession(filePath);
+      const result = await mgr.loadSession("tool-session");
 
       const roles = result.uiMessages.map((m) => m.role);
       expect(roles).toEqual(["user", "thinking", "tool", "assistant"]);

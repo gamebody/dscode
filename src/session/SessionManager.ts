@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises'
-import { join, basename } from 'node:path'
+import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { ModelMessage } from '../agent'
 import { UIMessage } from '../store/agent'
@@ -97,14 +97,34 @@ export class SessionManager {
     return groups
   }
 
-  async loadSession(filePath: string): Promise<ParsedSession> {
+  private async findSessionFile(sessionId: string): Promise<string | null> {
+    if (!existsSync(this.logsDir)) return null
+
+    const entries = await readdir(this.logsDir, { withFileTypes: true })
+    const dateDirs = entries
+      .filter(e => e.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(e.name))
+
+    for (const dir of dateDirs) {
+      const filePath = join(this.logsDir, dir.name, `${sessionId}.jsonl`)
+      if (existsSync(filePath)) {
+        return filePath
+      }
+    }
+
+    return null
+  }
+
+  async loadSession(sessionId: string): Promise<ParsedSession> {
+    const filePath = await this.findSessionFile(sessionId)
+    if (!filePath) {
+      throw new Error(`Session not found: ${sessionId}`)
+    }
+
     const raw = await readFile(filePath, 'utf-8')
     const lines = raw.trim().split('\n').filter(Boolean)
 
     const messages: ModelMessage[] = []
     const uiMessages: UIMessage[] = []
-
-    const sessionId = basename(filePath, '.jsonl')
 
     const toolCallMap: Record<string, { name: string; input: unknown }> = {}
 

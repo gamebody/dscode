@@ -35,6 +35,9 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }));
   })
 
+  const [useInputEnabled, setUseInputEnabled] = useState(true)
+
+
   const highlightValue = useRef<string | null>(null)
 
   const inputRef = useRef<any>(null)
@@ -42,6 +45,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const base = useStoreContext(s => s.base)
 
   const loading = useStoreContext(s => s.agent.loading)
+  const setLoading = useStoreContext(s => s.agent.setLoading)
   const isUserDecison = useStoreContext(s => s.bar.isUserDecison)
   const isResumeMode = useStoreContext(s => s.bar.isResumeMode)
   const currentAgent = useStoreContext(s => s.agent.agent)
@@ -49,7 +53,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
 
   const modelConfig = useStoreContext(s => s.userConfig.modelConfig)
         
-  const latestRef = useLatest({ isResumeMode, visible, currentAgent })
+  const latestRef = useLatest({ isResumeMode, visible, currentAgent, useInputEnabled })
 
 
   const pushMessage = useStoreContext(s => s.messageHistory.pushMessage)
@@ -82,8 +86,11 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const logsDir = useStoreContext(s => s.base.logs)
   const sessionMgr = useMemo(() => new SessionManager(logsDir), [logsDir])
 
-  const restoreSession = async (filePath: string, sessionId: string) => {
-    const parsed = await sessionMgr.loadSession(filePath)
+  const resumeFn = async (sessionId: string) => {
+    setLoading(true)
+    setResumeMode(false)
+
+    const parsed = await sessionMgr.loadSession(sessionId)
     const agent = codeAgent(
       { cwd: base.cwd, productName: base.productName, todosDir: base.todosDir },
       {
@@ -94,6 +101,8 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         logsDir: base.logs,
       },
     )
+    setLoading(false)
+
     agent.setSessionId(parsed.sessionId)
     setSessionId(parsed.sessionId)
     agent.appendMessage(parsed.messages, false)
@@ -101,7 +110,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     setUIMessage(parsed.uiMessages)
     setSessionApproved(false)
     refreshStaticKey()
-    setResumeMode(false)
+    setText('')
   }
 
 
@@ -127,13 +136,6 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
   }, [modelConfig])
 
-  // 思考模式变化时，同步到已有 agent（不重建 agent）
-  useEffect(() => {
-    if (currentAgent) {
-      currentAgent.setThinkingMode(thinkingMode)
-    }
-  }, [thinkingMode, currentAgent])
-
 
   useEffect(() => {
     if (!visible) {
@@ -145,9 +147,15 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
   }, [visible])
 
+  useEffect(() => {
+    setUseInputEnabled(!isResumeMode)
+  }, [isResumeMode])
+
   // ESC 按键监听，用于取消当前操作
   useInput((input, key) => {
     const latest = latestRef.current
+
+    if (!latest.useInputEnabled) return
 
     if (key.escape) {
       if (latest.currentAgent) {
@@ -181,14 +189,14 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     }
 
     // 上下箭头浏览历史（仅在建议列表不可见且非恢复模式时使用）
-    if (key.upArrow && !latest.visible && !latest.isResumeMode) {
+    if (key.upArrow && !latest.visible) {
       const historyText = navigateUp()
       if (historyText !== null) {
         setText(historyText)
         setVisible(false)
         inputRef.current?.setCursorOffset(historyText.length)
       }
-    } else if (key.downArrow && !latest.visible && !latest.isResumeMode) {
+    } else if (key.downArrow && !latest.visible) {
       const historyText = navigateDown()
       if (historyText !== null) {
         setText(historyText)
@@ -230,7 +238,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     setIsStatusBarVisible,
     setResumeMode,
     sessionMgr,
-    restoreSession,
+    resumeFn,
   };
 
   return (
@@ -369,10 +377,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
               const newText = `/resume ${session.sessionId}`
               setText(newText)
               inputRef.current?.setCursorOffset(newText.length)
-            }}
-            onSelect={(session) => {
-              restoreSession(session.filePath, session.sessionId)
-              setText('')
+              // inputRef.current?.setIsProtected(true)
             }}
           />
         )

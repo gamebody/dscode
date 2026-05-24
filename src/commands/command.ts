@@ -17,7 +17,7 @@ export interface CommandContext {
   setIsStatusBarVisible: (visible: boolean) => void;
   setResumeMode: (mode: boolean) => void;
   sessionMgr: SessionManager;
-  restoreSession: (filePath: string, sessionId: string) => Promise<void>;
+  resumeFn: (sessionId: string) => Promise<void>;
 }
 
 export interface Command {

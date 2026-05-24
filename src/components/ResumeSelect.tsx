@@ -7,10 +7,9 @@ import { Colors } from '../utils/colors'
 
 interface ResumeSelectProps {
   onHighlight?: (session: SessionSummary) => void
-  onSelect?: (session: SessionSummary) => void
 }
 
-export const ResumeSelect: React.FC<ResumeSelectProps> = ({ onHighlight, onSelect, }) => {
+export const ResumeSelect: React.FC<ResumeSelectProps> = ({ onHighlight, }) => {
   const logsDir = useStoreContext(s => s.base.logs)
 
   const [dateGroups, setDateGroups] = useState<DateGroup[]>([])
@@ -27,7 +26,7 @@ export const ResumeSelect: React.FC<ResumeSelectProps> = ({ onHighlight, onSelec
     })
   }, [sessionMgr])
 
-  const MAX_VISIBLE = 5
+  const MAX_VISIBLE = 9
 
   const allSessions = useMemo(() => {
     const list: { session: SessionSummary; date: string }[] = []
@@ -36,8 +35,15 @@ export const ResumeSelect: React.FC<ResumeSelectProps> = ({ onHighlight, onSelec
         list.push({ session, date: group.date })
       }
     }
+
     return list
   }, [dateGroups])
+
+  useEffect(() => {
+    if (allSessions.length) {
+      onHighlight?.(allSessions[activeIndex]!.session)
+    }
+  }, [allSessions])
 
   useEffect(() => {
     const newScrollOffset = Math.max(
@@ -79,11 +85,6 @@ export const ResumeSelect: React.FC<ResumeSelectProps> = ({ onHighlight, onSelec
         const newIndex = activeIndex < allSessions.length - 1 ? activeIndex + 1 : 0
         setActiveIndex(newIndex)
         onHighlight?.(allSessions[newIndex]!.session)
-      } else if (key.return && allSessions.length > 0) {
-        const item = allSessions[activeIndex]
-        if (item) {
-          onSelect?.(item.session)
-        }
       }
     },
     { isActive: true },

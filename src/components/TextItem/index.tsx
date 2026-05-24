@@ -226,6 +226,12 @@ const TextItem: React.FC<TextItemProps> = ({
         );
       case "tool":
         return renderTool(content);
+      case "error":
+        return (
+          <Box borderStyle="round" borderColor={Colors.AccentRed} padding={1} marginY={1}>
+            <Text color={Colors.AccentRed}>Error: {content}</Text>
+          </Box>
+        )
       default:
         return <Text>{JSON.stringify(content)}</Text>;
     }

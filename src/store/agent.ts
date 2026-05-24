@@ -44,6 +44,9 @@ export type UIMessage = {
 } | {
   role: 'thinking',
   content: string
+} | {
+  role: 'error',
+  content: string
 } | Tool
 
 type State = {
@@ -129,6 +132,8 @@ export const stateCreator: StateCreator<
         })
       })
       agent.appendMessage({ role: 'user', content: message })
+      agent.setThinkingMode(get().bar.thinkingMode)
+
       await get().agent.runLoop()
     },
     async runLoop() {

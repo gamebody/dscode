@@ -5,21 +5,15 @@ export class ResumeCommand extends BaseCommand {
   description = '恢复之前的会话'
 
   async execute(context: CommandContext, input?: string): Promise<void> {
-    const sessionId = input?.slice(this.name.length).trim()
+    const sessionId = input?.substring(this.name.length).trim()
+
     if (sessionId) {
-      const sessionMgr = context.sessionMgr
-      const groups = await sessionMgr.scanSessions()
-      for (const group of groups) {
-        for (const session of group.sessions) {
-          if (session.sessionId === sessionId) {
-            await context.restoreSession(session.filePath, sessionId)
-            return
-          }
-        }
-      }
-      context.setResumeMode(true)
+      context.resumeFn(sessionId)
     } else {
-      context.setResumeMode(true)
+      context.pushUIMessage({
+        role: 'error',
+        content: `未找到会话: ${sessionId}`,
+      })
     }
   }
 }
