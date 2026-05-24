@@ -22,7 +22,7 @@ const ThinkingBlock: React.FC<{
       flexDirection="column"
       paddingY={0}
       marginY={1}
-      height={maxHeight + 3}
+      maxHeight={maxHeight + 3}
     >
       <Box>
         <Text color={Colors.AccentGreen}>✦ </Text>
