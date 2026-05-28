@@ -49,7 +49,7 @@
   ],
   "private": true,
   "scripts": {
-    "build": "bun build index.tsx --external react-devtools-core --minify --outfile bundle/dscode.js --target=node && pnpm build:post",
+    "build": "bun build index.tsx --external react-devtools-core --minify --outfile bundle/dscode.js --target=node && bun build:post",
     "build:post": "bun scripts/post-build.ts",
     "dev": "bun --watch ./index.tsx",
     "sfe": "bun build --compile --external react-devtools-core --target=bun-darwin-arm64 ./index.tsx --outfile one",
