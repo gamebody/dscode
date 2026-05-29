@@ -4,6 +4,7 @@ import path from 'pathe';
 import { z } from 'zod';
 import { ApprovalCategory, TOOL_NAMES } from '../utils/constants.js';
 import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
+import type { ITool } from "./types.js";
 
 const TODO_WRITE_PROMPT = `
 Use this tool to create and manage a structured task list for your current coding session. This helps you track progress, organize complex tasks, and demonstrate thoroughness to the user.
@@ -200,72 +201,17 @@ type TodoList = z.infer<typeof TodoListSchema>;
 
 export type TodoItem = z.infer<typeof TodoItemSchema>;
 
-export const todoWriteToolSchema: ChatCompletionFunctionTool = {
-  type: "function",
-  function: {
-    name: TOOL_NAMES.TODO_WRITE,
-    description: TODO_WRITE_PROMPT,
-    parameters: {
-      type: "object",
-      properties: {
-        todos: {
-          type: "array",
-          description: "The updated todo list",
-          items: {
-            type: "object",
-            properties: {
-              id: {
-                type: "string",
-                description: "Unique identifier for the todo item",
-              },
-              content: {
-                type: "string",
-                minLength: 1,
-                description: "The task description",
-              },
-              status: {
-                type: "string",
-                enum: ["pending", "in_progress", "completed"],
-                description: "The status of the task",
-              },
-              priority: {
-                type: "string",
-                enum: ["low", "medium", "high"],
-                description: "The priority of the task",
-              },
-            },
-            required: ["id", "content", "status", "priority"],
-          },
-        },
-      },
-      required: ["todos"],
-    },
-  },
-};
-
-export const todoReadToolSchema: ChatCompletionFunctionTool = {
-  type: "function",
-  function: {
-    name: TOOL_NAMES.TODO_READ,
-    description: TODO_READ_PROMPT,
-    parameters: {
-      type: "object",
-      properties: {},
-    },
-  },
-};
-
 type TodoWriteInput = {
   todos: TodoList;
-}
+};
 
 type TodoWriteOutput = {
   llmContent: string;
-}
+};
 
 type TodoReadOutput = {
   llmContent: string;
-}
+};
 
 async function loadTodosFromFile(filePath: string) {
   if (!fs.existsSync(filePath)) return [];
@@ -283,6 +229,30 @@ async function loadTodosFromFile(filePath: string) {
 async function saveTodos(todos: TodoList, filePath: string) {
   await writeFile(filePath, JSON.stringify(todos, null, 2));
 }
+
+export type TodoWriteReturnDisplay = {
+  type: 'todo_write';
+  oldTodos: TodoList;
+  newTodos: TodoList;
+};
+
+export type TodoReadReturnDisplay = {
+  type: 'todo_read';
+  todos: TodoList;
+};
+
+export type TodoWriteTool = {
+  name: 'todoWrite',
+  input: TodoWriteInput,
+  output: TodoWriteOutput,
+};
+
+export type TodoReadTool = {
+  name: 'todoRead',
+  input: null,
+  output: TodoReadOutput,
+  returnDisplay: TodoReadReturnDisplay,
+};
 
 export function createTodoTool(opts: { filePath: string }) {
   function ensureTodoDirectory() {
@@ -302,92 +272,131 @@ export function createTodoTool(opts: { filePath: string }) {
     return await loadTodosFromFile(getTodoFilePath());
   }
 
-  const todoWriteExecutor = async ({ todos }: TodoWriteInput) => {
-    try {
-      const oldTodos = await readTodos();
-      const newTodos = todos;
-      await saveTodos(newTodos, getTodoFilePath());
+  const todoWriteTool: ITool<TodoWriteInput> = {
+    name: TOOL_NAMES.TODO_WRITE,
 
-      return {
-        type: "tool-result" as const,
-        payload: {
-          llmContent: 'Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable',
+    schema: {
+      type: "function",
+      function: {
+        name: TOOL_NAMES.TODO_WRITE,
+        description: TODO_WRITE_PROMPT,
+        parameters: {
+          type: "object",
+          properties: {
+            todos: {
+              type: "array",
+              description: "The updated todo list",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "string",
+                    description: "Unique identifier for the todo item",
+                  },
+                  content: {
+                    type: "string",
+                    minLength: 1,
+                    description: "The task description",
+                  },
+                  status: {
+                    type: "string",
+                    enum: ["pending", "in_progress", "completed"],
+                    description: "The status of the task",
+                  },
+                  priority: {
+                    type: "string",
+                    enum: ["low", "medium", "high"],
+                    description: "The priority of the task",
+                  },
+                },
+                required: ["id", "content", "status", "priority"],
+              },
+            },
+          },
+          required: ["todos"],
         },
-        returnDisplay: { type: 'todo_write', oldTodos, newTodos },
-      };
-    } catch (error) {
-      return {
-        isError: true,
-        payload: {
-          llmContent:
-            error instanceof Error
-              ? `Failed to write todos: ${error.message}`
-              : 'Unknown error',
-        }
-      };
-    }
-  }
+      },
+    },
 
-  todoWriteExecutor.approval = {
-    category: ApprovalCategory.READ,
-  }
+    approval: {
+      category: ApprovalCategory.READ,
+    },
 
-  const todoReadExecutor = async () => {
-    try {
-      const todos = await readTodos();
-      return {
-        type: "tool-result" as const,
-        payload: {
-          llmContent:
-            todos.length === 0
-              ? 'Todo list is empty'
-              : `Found ${todos.length} todos`,
+    executor: async ({ todos }: TodoWriteInput) => {
+      try {
+        const oldTodos = await readTodos();
+        const newTodos = todos;
+        await saveTodos(newTodos, getTodoFilePath());
+
+        return {
+          type: "tool-result" as const,
+          payload: {
+            llmContent: 'Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable',
+          },
+          returnDisplay: { type: 'todo_write' as const, oldTodos, newTodos },
+        };
+      } catch (error) {
+        return {
+          isError: true,
+          payload: {
+            llmContent:
+              error instanceof Error
+                ? `Failed to write todos: ${error.message}`
+                : 'Unknown error',
+          },
+        };
+      }
+    },
+  };
+
+  const todoReadTool: ITool<Record<string, never>> = {
+    name: TOOL_NAMES.TODO_READ,
+
+    schema: {
+      type: "function",
+      function: {
+        name: TOOL_NAMES.TODO_READ,
+        description: TODO_READ_PROMPT,
+        parameters: {
+          type: "object",
+          properties: {},
         },
-        returnDisplay: { type: 'todo_read', todos },
-      };
-    } catch (error) {
-      return {
-        isError: true,
-        payload: {
-          llmContent:
-            error instanceof Error
-              ? `Failed to read todos: ${error.message}`
-              : 'Unknown error',
-        },
-      };
-    }
-  }
+      },
+    },
 
-  todoReadExecutor.approval = {
-    category: ApprovalCategory.READ,
-  }
+    approval: {
+      category: ApprovalCategory.READ,
+    },
+
+    executor: async () => {
+      try {
+        const todos = await readTodos();
+        return {
+          type: "tool-result" as const,
+          payload: {
+            llmContent:
+              todos.length === 0
+                ? 'Todo list is empty'
+                : `Found ${todos.length} todos`,
+          },
+          returnDisplay: { type: 'todo_read' as const, todos },
+        };
+      } catch (error) {
+        return {
+          isError: true,
+          payload: {
+            llmContent:
+              error instanceof Error
+                ? `Failed to read todos: ${error.message}`
+                : 'Unknown error',
+          },
+        };
+      }
+    },
+  };
 
   return {
-    todoWriteExecutor,
-    todoReadExecutor,
+    todoWriteTool,
+    todoReadTool,
   };
-}
-
-export type TodoWriteReturnDisplay = {
-  type: 'todo_write';
-  oldTodos: TodoList;
-  newTodos: TodoList;
-};
-
-export type TodoReadReturnDisplay = {
-  type: 'todo_read';
-  todos: TodoList;
-};
-
-export type TodoWriteTool = {
-  name: 'todoWrite',
-  input: TodoWriteInput,
-  output: TodoWriteOutput,
-}
-
-export type TodoReadTool = {
-  name: 'todoRead',
-  input: null,
-  output: TodoReadOutput,
-  returnDisplay: TodoReadReturnDisplay,
 }

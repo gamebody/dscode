@@ -2,41 +2,53 @@ import path from "path";
 import { createFileTree, listDirectory, MAX_FILES, printTree, TRUNCATED_MESSAGE } from "../utils/list.js";
 import { CodeAgentContext } from "../agents/codeAgent.js";
 import { ApprovalCategory, TOOL_NAMES } from "../utils/constants.js";
-import type { ChatCompletionFunctionTool } from "openai/resources/chat/completions";
-
-const toolName = TOOL_NAMES.LS;
-
-export const lsToolSchema: ChatCompletionFunctionTool = {
-  type: "function",
-  function: {
-    name: toolName,
-    description:
-      "Use this tool to list files and directories in a given path.",
-    parameters: {
-      type: "object",
-      properties: {
-        dir_path: {
-          type: "string",
-          description: "The path to the directory to list.",
-        },
-      },
-      required: ["dir_path"],
-    },
-  },
-};
-
+import type { ITool } from "./types.js";
 
 type Input = {
   dir_path: string;
-}
+};
 
 type Output = {
   llmContent: string;
-}
+};
 
-export const lsExecutor = async (input: Input, context: CodeAgentContext) => {
-  const { dir_path } = input;
-  try {
+export type LsToolReturnDisplay = string;
+
+export type LsTool = {
+  name: 'ls',
+  input: Input,
+  output: Output,
+};
+
+export const lsTool: ITool<Input> = {
+  name: TOOL_NAMES.LS,
+
+  schema: {
+    type: "function",
+    function: {
+      name: TOOL_NAMES.LS,
+      description:
+        "Use this tool to list files and directories in a given path.",
+      parameters: {
+        type: "object",
+        properties: {
+          dir_path: {
+            type: "string",
+            description: "The path to the directory to list.",
+          },
+        },
+        required: ["dir_path"],
+      },
+    },
+  },
+
+  approval: {
+    category: ApprovalCategory.READ,
+  },
+
+  executor: async (input: Input, context: CodeAgentContext) => {
+    const { dir_path } = input;
+    try {
       const fullFilePath = path.isAbsolute(dir_path)
         ? dir_path
         : path.resolve(context.cwd, dir_path);
@@ -54,7 +66,7 @@ export const lsExecutor = async (input: Input, context: CodeAgentContext) => {
           returnDisplay: `Listed ${result.length} files/directories`,
           payload: {
             llmContent: userTree,
-          }
+          },
         };
       } else {
         const assistantData = `${TRUNCATED_MESSAGE}${userTree}`;
@@ -66,26 +78,14 @@ export const lsExecutor = async (input: Input, context: CodeAgentContext) => {
           },
         };
       }
-  } catch (error) {
-    return {
-      isError: true,
-      returnDisplay:  `Error: ${error instanceof Error ? error.message : String(error)}`,
-      payload: {
-        llmContent: [`Error: ${error instanceof Error ? error.message : String(error)}`]
-      },
-    };
-  }
+    } catch (error) {
+      return {
+        isError: true,
+        returnDisplay: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        payload: {
+          llmContent: [`Error: ${error instanceof Error ? error.message : String(error)}`],
+        },
+      };
+    }
+  },
 };
-
-lsExecutor.approval = {
-  category: ApprovalCategory.READ,
-}
-
-export type LsToolReturnDisplay = string;
-
-export type LsTool = {
-  name: 'ls',
-  input: Input,
-  output: Output,
-}
-

@@ -9,6 +9,7 @@ import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { MessageLogger } from "../../../logger/index.js";
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
+import type { ITool } from "../tools/types.js";
 
 
 export type ModelConfig = {
@@ -192,6 +193,12 @@ export default class Core<TContext = Record<string, any>> {
 
   registerToolExecutor(toolName: string, executor: any) {
     this.toolExecutors[toolName] = executor
+  }
+
+  register(tool: ITool<any>) {
+    this.tools[tool.name] = tool.schema as any
+    ;(tool.executor as any).approval = tool.approval
+    this.toolExecutors[tool.name] = tool.executor
   }
 
   private getTools(): ChatCompletionTool[] {
