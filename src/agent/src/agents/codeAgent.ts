@@ -13,6 +13,7 @@ import { readProjectSummary } from "../../../utils/projectContext.js";
 import { skillToolSchema, skillExecutor } from "../tools/skill.js";
 import { SkillsManager } from "../../../skills/index.js";
 import { TOOL_NAMES } from "../utils/constants.js";
+import dayjs from "dayjs";
 
 
 export interface BackgroundTask {
@@ -49,8 +50,10 @@ export default function codeAgent(context: CodeAgentContext, options?: CodeAgent
     const systemPrompt = generateSystemPrompt({
       todo: true,
       productName: context.productName,
-      language: 'English',
+      language: 'Chinese',
       appendSystemPrompt: combinedAppend || undefined,
+      workingDirectory: context.cwd,
+      currentTime: dayjs().format("YYYY-MM-DD"),
     })
 
     agent.setSystem(systemPrompt)

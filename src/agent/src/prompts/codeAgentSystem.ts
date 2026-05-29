@@ -69,8 +69,13 @@ export function generateSystemPrompt(opts: {
   todo: boolean;
   productName: string;
   language?: string;
+  workingDirectory?: string;
+  currentTime?: string;
   appendSystemPrompt?: string;
 }) {
+  const workingDirectory = opts.workingDirectory || process.cwd();
+  const currentTime = opts.currentTime || new Date().toLocaleString();
+
   return `
 You are an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
 
@@ -81,6 +86,9 @@ ${
     : `IMPORTANT: Answer in ${opts.language}.
 `
 }
+# Environment
+Current working directory: ${workingDirectory}
+Current time: ${currentTime}
 
 # Tone and style
 You should be concise, direct, and to the point. When you run a non-trivial bash command, you should explain what the command does and why you are running it.
