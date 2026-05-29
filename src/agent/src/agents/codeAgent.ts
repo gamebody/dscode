@@ -14,12 +14,18 @@ import { skillToolSchema, skillExecutor } from "../tools/skill.js";
 import { SkillsManager } from "../../../skills/index.js";
 import { TOOL_NAMES } from "../utils/constants.js";
 import dayjs from "dayjs";
+import type { ChildProcess } from "child_process";
 
 
 export interface BackgroundTask {
-  process: any;
+  process: ChildProcess;
   startTime: number;
   command: string;
+  status: 'running' | 'completed' | 'killed' | 'error';
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  toolCallId: string;
 }
 
 export interface CodeAgentContext {

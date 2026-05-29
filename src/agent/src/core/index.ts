@@ -161,6 +161,10 @@ export default class Core<TContext = Record<string, any>> {
     return newId
   }
 
+  getContext(): TContext {
+    return this.context
+  }
+
   abort() {
     this.abortController.abort()
     this.abortController = new AbortController()
@@ -217,7 +221,7 @@ export default class Core<TContext = Record<string, any>> {
   executeTool(toolCall: TypedToolCall<ToolSet>, userInput?: unknown) {
     const executor = this.toolExecutors[toolCall.toolName]
     if (!executor) {
-      const message = `Tool "${toolCall.toolName}" is not registered. Available tools: ${Object.keys(this.toolExecutors).join(', ') || 'none'}`
+      const message = `Tool \"${toolCall.toolName}\" is not registered. Available tools: ${Object.keys(this.toolExecutors).join(', ') || 'none'}`
       return {
         type: "tool-result" as const, 
         returnDisplay: message,
@@ -226,7 +230,7 @@ export default class Core<TContext = Record<string, any>> {
         },
       }
     }
-    return executor(toolCall.input, this.context, userInput)
+    return executor(toolCall.input, this.context, userInput, toolCall.toolCallId)
   }
 
   approvalCategory(toolCall: TypedToolCall<ToolSet>) {

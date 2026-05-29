@@ -2,6 +2,7 @@ import { StateCreator } from 'zustand'
 import { produce } from 'immer'
 import { StateActions } from './index'
 import { ApprovalCategory, AskUserQuestionTool, BashTool, Core, EditTool, GlobTool, LsTool, ModelMessage, ReadTool, TodoReadTool, TodoWriteTool, WriteTool } from '../agent'
+import type { CodeAgentContext } from '../agent/src/agents/codeAgent'
 
 import { QA } from './approval'
 import { BashToolReturnDisplay } from '../agent/src/tools/bash'
@@ -144,6 +145,41 @@ export const stateCreator: StateCreator<
         get().agent.setLoading(true)
 
         try {
+          // ---- inject completed background task results ----
+          const context = agent.getContext() as CodeAgentContext;
+          if (context.backgroundTasks) {
+            const completedIds: string[] = [];
+            const injectMessages: ModelMessage[] = [];
+
+            for (const [taskId, task] of Object.entries(context.backgroundTasks)) {
+              if (task.status === 'completed' || task.status === 'error' || task.status === 'killed') {
+                let output = '';
+                if (task.stdout) output += task.stdout;
+                if (task.stderr) output += (output ? '\n' : '') + task.stderr;
+
+                injectMessages.push({
+                  role: 'user',
+                  content: `Background task [${taskId}] completed.\nCommand: ${task.command}\nExit code: ${task.exitCode}\nOutput:\n${output || '(no output)'}`,
+                });
+
+                get().agent.pushUIMessage({
+                  role: 'user',
+                  content: `Background task [${taskId}] completed (exit: ${task.exitCode}). Command: ${task.command}`,
+                });
+
+                completedIds.push(taskId);
+              }
+            }
+
+            if (injectMessages.length > 0) {
+              agent.appendMessage(injectMessages);
+            }
+
+            for (const taskId of completedIds) {
+              delete context.backgroundTasks[taskId];
+            }
+          }
+
           // ---- streaming loop ----
           let accumulatedText = ''
           let accumulatedReasoning = ''
