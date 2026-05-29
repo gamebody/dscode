@@ -54,7 +54,8 @@ type State = {
   agent: Core | null
   UIMessage: UIMessage[]
   loading: boolean
-  sessionApproved: boolean
+  sessionWriteApproved: boolean
+  sessionCommandApproved: boolean
 }
 
 type Action = {
@@ -63,7 +64,8 @@ type Action = {
   setLoading: (loading: boolean) => void
   pushUIMessage: (message: UIMessage) => void
   setUIMessage: (messages: UIMessage[]) => void
-  setSessionApproved: (approved: boolean) => void
+  setSessionWriteApproved: (approved: boolean) => void
+  setSessionCommandApproved: (approved: boolean) => void
   runLoop: () => Promise<void>
   reset: () => void
 }
@@ -76,7 +78,8 @@ const initialValues: State = {
   agent: null,
   UIMessage: [],
   loading: false,
-  sessionApproved: false,
+  sessionWriteApproved: false,
+  sessionCommandApproved: false,
 }
 
 export const stateCreator: StateCreator<
@@ -109,10 +112,17 @@ export const stateCreator: StateCreator<
         })
       })
     },
-    setSessionApproved(approved: boolean) {
+    setSessionWriteApproved(approved: boolean) {
       set((state: Store) => {
         return produce(state, (draft) => {
-          draft.agent.sessionApproved = approved
+          draft.agent.sessionWriteApproved = approved
+        })
+      })
+    },
+    setSessionCommandApproved(approved: boolean) {
+      set((state: Store) => {
+        return produce(state, (draft) => {
+          draft.agent.sessionCommandApproved = approved
         })
       })
     },
@@ -298,27 +308,23 @@ export const stateCreator: StateCreator<
               const agentMode = get().bar.agentMode
 
               if (approvalCategory === ApprovalCategory.WRITE) {
-                if (agentMode === 'yolo') {
-                  // YOLO 模式：自动同意
-                } else if (!get().agent.sessionApproved) {
+                if (agentMode === 'agent' && !get().agent.sessionWriteApproved) {
                   const userDecision = await get().approval.requestApproval(bridge)
                   if (userDecision === 'disagree') {
                     shouldStopLoop = true
                   } else if (userDecision === 'agree_all_session') {
-                    get().agent.setSessionApproved(true)
+                    get().agent.setSessionWriteApproved(true)
                   }
                 }
               }
 
               if (approvalCategory === ApprovalCategory.COMMAND) {
-                if (agentMode === 'yolo') {
-                  // YOLO 模式：自动同意
-                } else if (!get().agent.sessionApproved) {
+                if (agentMode === 'agent' && !get().agent.sessionCommandApproved) {
                   const userDecision = await get().approval.requestApproval(bridge)
                   if (userDecision === 'disagree') {
                     shouldStopLoop = true
                   } else if (userDecision === 'agree_all_session') {
-                    get().agent.setSessionApproved(true)
+                    get().agent.setSessionCommandApproved(true)
                   }
                 }
               }
