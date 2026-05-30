@@ -77,7 +77,8 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
   const setAgent = useStoreContext(s => s.agent.setAgent)
   const setUIMessage = useStoreContext(s => s.agent.setUIMessage)
   const pushUIMessage = useStoreContext(s => s.agent.pushUIMessage)
-  const setSessionApproved = useStoreContext(s => s.agent.setSessionApproved)
+  const setSessionWriteApproved = useStoreContext(s => s.agent.setSessionWriteApproved)
+  const setSessionCommandApproved = useStoreContext(s => s.agent.setSessionCommandApproved)
   const runLoop = useStoreContext(s => s.agent.runLoop)
 
 
@@ -108,7 +109,8 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
     agent.appendMessage(parsed.messages, false)
     setAgent(agent)
     setUIMessage(parsed.uiMessages)
-    setSessionApproved(false)
+    setSessionWriteApproved(false)
+    setSessionCommandApproved(false)
     refreshStaticKey()
     setText('')
   }
@@ -229,7 +231,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
         const sessionId = currentAgent.refreshSessionId()
         setSessionId(sessionId)
 
-        setSessionApproved(false)
+        setSessionCommandApproved(false)
         refreshStaticKey()
         firstMessageRecorded.current = false
       }
