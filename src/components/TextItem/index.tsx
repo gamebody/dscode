@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from "react";
+import React, { ReactElement, ReactNode, useMemo } from "react";
 import { Box, Text } from "ink";
 import { ReturnDisplay, Tool, UIMessage } from "../../store/agent";
 import UserText from "./UserText";
@@ -8,6 +8,7 @@ import { DiffViewer } from "../DiffViewer";
 import { TOOL_NAMES } from "../../agent/src/utils/constants";
 import ThinkingBlock from "./ThinkingBlock";
 import Gradient from "ink-gradient";
+import { MaxSizedBox } from "../MaxSizedBox";
 
 const STATUS_ICONS: Record<string, string> = {
   completed: "✓",
@@ -167,24 +168,57 @@ const TextItem: React.FC<TextItemProps> = ({
     switch (role) {
       case "user":
         return <UserText text={content} />;
-      case "assistant":
-        return (
-          <Box marginY={1} flexDirection="column">
-            <Box flexDirection='row'>
-              <Gradient name='rainbow'>
-                <Text>✦ ONECODE</Text>
-              </Gradient>
+      case "assistant": {
+        const lines = useMemo(() => content.split("\n"), [content]);
+
+        const maxHeight = 10 + 1;
+        const maxWidth = terminalWidth! - 4;
+        if (isStreaming) {
+          return (
+            <Box marginY={1} flexDirection="column">
+              <Box flexDirection='row'>
+                <Gradient name='rainbow'>
+                  <Text>✦ ONECODE</Text>
+                </Gradient>
+              </Box>
+              <Box flexDirection="column" marginLeft={2} maxHeight={maxHeight}>
+                <MaxSizedBox
+                  maxWidth={maxWidth}
+                  maxHeight={maxHeight}
+                  overflowDirection="top"
+                >
+                  {lines.map((line, i) => (
+                    <Box key={i}>
+                      <Text wrap="wrap" color={isStreaming ? Colors.Foreground : Colors.Comment}>
+                        {line}
+                      </Text>
+                    </Box>
+                  ))}
+                </MaxSizedBox>
+              </Box>
             </Box>
-            <Box flexDirection="column" marginLeft={2}>
-              <MarkdownDisplay
-                availableTerminalHeight={terminalHeight}
-                text={content as string}
-                isPending={!!isStreaming}
-                terminalWidth={terminalWidth ?? 80}
-              />
+          );
+        } else {
+          return (
+            <Box marginY={1} flexDirection="column">
+              <Box flexDirection='row'>
+                <Gradient name='rainbow'>
+                  <Text>✦ ONECODE</Text>
+                </Gradient>
+              </Box>
+              <Box flexDirection="column" marginLeft={2}>
+                <MarkdownDisplay
+                  availableTerminalHeight={terminalHeight}
+                  text={content}
+                  isPending={!!isStreaming}
+                  terminalWidth={terminalWidth ?? 80}
+                />
+              </Box>
             </Box>
-          </Box>
-        );
+          )
+        }
+
+      }
       case "thinking":
         return (
           <ThinkingBlock
