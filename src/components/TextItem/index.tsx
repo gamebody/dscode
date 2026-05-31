@@ -1,160 +1,16 @@
-import React, { ReactElement, ReactNode, useMemo } from "react";
+import React, { ReactElement } from "react";
 import { Box, Text } from "ink";
-import { ReturnDisplay, Tool, UIMessage } from "../../store/agent";
+import { UIMessage } from "../../store/agent";
 import UserText from "./UserText";
+import AssistantText from "./AssistantText";
 import { Colors } from "../../utils/colors";
-import { MarkdownDisplay } from "../../utils/MarkdownDisplay";
-import { DiffViewer } from "../DiffViewer";
-import { TOOL_NAMES } from "../../agent/src/utils/constants";
 import ThinkingBlock from "./ThinkingBlock";
-import Gradient from "ink-gradient";
-import { MaxSizedBox } from "../MaxSizedBox";
-
-const STATUS_ICONS: Record<string, string> = {
-  completed: "✓",
-  in_progress: "⟳",
-  pending: "☐",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  completed: Colors.AccentGreen,
-  in_progress: Colors.AccentYellow,
-  pending: Colors.Gray,
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  high: Colors.AccentRed,
-  medium: Colors.AccentYellow,
-  low: Colors.AccentGreen,
-};
-
-
-
-type TodoItem = {
-  id: string;
-  status: string;
-  content: string;
-  priority: string;
-};
-
-const TodoList: React.FC<{ todos: TodoItem[] }> = ({ todos }) => (
-  <Box marginLeft={3} flexDirection="column">
-    <Text color={Colors.Gray}>↳ Todos ({todos.length}):</Text>
-    {todos.map((todo, index) => {
-      const statusIcon = STATUS_ICONS[todo.status] ?? STATUS_ICONS.pending;
-      const statusColor = STATUS_COLORS[todo.status] ?? STATUS_COLORS.pending;
-      const priorityColor =
-        PRIORITY_COLORS[todo.priority] ?? PRIORITY_COLORS.low;
-      const isCompleted = todo.status === "completed";
-
-      return (
-        <Box key={todo.id} marginLeft={2} flexDirection="column">
-          <Box>
-            <Text color={Colors.Gray}>{index + 1}. </Text>
-            <Text color={statusColor}>{statusIcon} </Text>
-            <Text
-              color={isCompleted ? Colors.Gray : Colors.Foreground}
-              strikethrough={isCompleted}
-            >
-              {todo.content}
-            </Text>
-            <Text color={priorityColor}> ({todo.priority})</Text>
-          </Box>
-        </Box>
-      );
-    })}
-  </Box>
-);
+import { renderTool } from "./ToolRender";
 
 export type TextItemProps = UIMessage & {
   isStreaming?: boolean;
   terminalWidth?: number;
   terminalHeight?: number;
-};
-
-type ToolDisplayProps = {
-  name: string;
-  input: ReactNode;
-  output: ReactNode;
-};
-
-const ToolDisplay = ({ name, input, output }: ToolDisplayProps) => (
-  <Box marginY={1} flexDirection="column">
-    <Box>
-      <Text color={Colors.AccentGreen}>✦ {name}</Text>
-      <Text color={Colors.Gray}>({input})</Text>
-    </Box>
-    <Box marginLeft={3}>
-      <Text color={Colors.Gray}>↳ {output}</Text>
-    </Box>
-  </Box>
-);
-
-const renderTool = (tool: Tool["content"]): ReactElement => {
-  const returnDisplay: ReturnDisplay | undefined = tool.returnDisplay;
-
-  if (typeof returnDisplay === "object" && returnDisplay !== null) {
-    const toolInput = tool.input as Record<string, unknown> | null;
-
-    if (returnDisplay.type === 'todo_read') {
-      return (
-        <Box marginY={1} flexDirection="column">
-          <Box>
-            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
-          </Box>
-          <TodoList todos={returnDisplay.todos} />
-        </Box>
-      );
-    }
-
-    if (returnDisplay.type === 'todo_write') {
-      return (
-        <Box marginY={1} flexDirection="column">
-          <Box>
-            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
-          </Box>
-          <TodoList todos={returnDisplay.newTodos} />
-        </Box>
-      );
-    }
-
-    if (returnDisplay.type === 'diff_viewer') {
-      const { filePath, originalContent, newContent, startLineNumber } = returnDisplay;
-      const resolvedOriginalContent =
-        typeof originalContent === 'object' && 'inputKey' in originalContent
-          ? (toolInput?.[originalContent.inputKey] as string) ?? ''
-          : originalContent;
-      const resolvedNewContent =
-        typeof newContent === 'object' && 'inputKey' in newContent
-          ? (toolInput?.[newContent.inputKey] as string) ?? ''
-          : newContent;
-
-      return (
-        <Box marginY={1} flexDirection="column">
-          <Box>
-            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
-            <Text color={Colors.Gray}>({filePath})</Text>
-          </Box>
-          <Box marginLeft={3}>
-            <DiffViewer
-              originalContent={resolvedOriginalContent}
-              newContent={resolvedNewContent}
-              fileName={filePath}
-              startLineNumber={startLineNumber}
-            />
-          </Box>
-        </Box>
-      );
-    }
-  }
-
-  return (
-    <ToolDisplay
-      name={tool.name}
-      input={tool.name == TOOL_NAMES.ASK_USER_QUESTION ? '' : JSON.stringify(tool.input)}
-      output={tool.returnDisplay as string || "No return display"}
-    />
-  );
 };
 
 const TextItem: React.FC<TextItemProps> = ({
@@ -168,57 +24,15 @@ const TextItem: React.FC<TextItemProps> = ({
     switch (role) {
       case "user":
         return <UserText text={content} />;
-      case "assistant": {
-        const lines = useMemo(() => content.split("\n"), [content]);
-
-        const maxHeight = 10 + 1;
-        const maxWidth = terminalWidth! - 4;
-        if (isStreaming) {
-          return (
-            <Box marginY={1} flexDirection="column">
-              <Box flexDirection='row'>
-                <Gradient name='rainbow'>
-                  <Text>✦ ONECODE</Text>
-                </Gradient>
-              </Box>
-              <Box flexDirection="column" marginLeft={2} maxHeight={maxHeight}>
-                <MaxSizedBox
-                  maxWidth={maxWidth}
-                  maxHeight={maxHeight}
-                  overflowDirection="top"
-                >
-                  {lines.map((line, i) => (
-                    <Box key={i}>
-                      <Text wrap="wrap" color={isStreaming ? Colors.Foreground : Colors.Comment}>
-                        {line}
-                      </Text>
-                    </Box>
-                  ))}
-                </MaxSizedBox>
-              </Box>
-            </Box>
-          );
-        } else {
-          return (
-            <Box marginY={1} flexDirection="column">
-              <Box flexDirection='row'>
-                <Gradient name='rainbow'>
-                  <Text>✦ ONECODE</Text>
-                </Gradient>
-              </Box>
-              <Box flexDirection="column" marginLeft={2}>
-                <MarkdownDisplay
-                  availableTerminalHeight={terminalHeight}
-                  text={content}
-                  isPending={!!isStreaming}
-                  terminalWidth={terminalWidth ?? 80}
-                />
-              </Box>
-            </Box>
-          )
-        }
-
-      }
+      case "assistant":
+        return (
+          <AssistantText
+            content={content as string}
+            isStreaming={isStreaming}
+            terminalWidth={terminalWidth}
+            terminalHeight={terminalHeight}
+          />
+        );
       case "thinking":
         return (
           <ThinkingBlock
