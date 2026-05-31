@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import { Colors } from "../../utils/colors";
+import { ICON } from "../../utils/icons";
 import { MarkdownDisplay } from "../../utils/MarkdownDisplay";
 import Gradient from "ink-gradient";
 import { MaxSizedBox } from "../MaxSizedBox";
@@ -26,7 +27,7 @@ const AssistantText: React.FC<AssistantTextProps> = ({
     <Box marginY={1} flexDirection="column">
       <Box flexDirection="row">
         <Gradient name="rainbow">
-          <Text>✦ ONECODE</Text>
+          <Text>{ICON} ONECODE</Text>
         </Gradient>
       </Box>
       {isStreaming ? (

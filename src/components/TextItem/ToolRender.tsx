@@ -2,6 +2,7 @@ import React, { ReactElement, ReactNode } from "react";
 import { Box, Text } from "ink";
 import { ReturnDisplay, Tool } from "../../store/agent";
 import { Colors } from "../../utils/colors";
+import { ICON } from "../../utils/icons";
 import { DiffViewer } from "../DiffViewer";
 import { TOOL_NAMES } from "../../agent/src/utils/constants";
 
@@ -68,7 +69,7 @@ type ToolDisplayProps = {
 const ToolDisplay = ({ name, input, output }: ToolDisplayProps) => (
   <Box marginY={1} flexDirection="column">
     <Box>
-      <Text color={Colors.AccentGreen}>✦ {name}</Text>
+      <Text color={Colors.AccentGreen}>{ICON} {name}</Text>
       <Text color={Colors.Gray}>({input})</Text>
     </Box>
     <Box marginLeft={3}>

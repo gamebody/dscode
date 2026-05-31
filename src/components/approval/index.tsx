@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { useStoreContext } from '../../store/index';
 import { ApprovalDecision, QA } from '../../store/approval';
 import { Colors } from '../../utils/colors';
+import { ICON } from '../../utils/icons';
 import { MarkdownDisplay } from '../../utils/MarkdownDisplay';
 import QuestionAnswer from './QuestionAnswer';
 
@@ -99,7 +100,7 @@ const Approval: FC = () => {
     <Box flexDirection="column" borderStyle="round" borderColor="yellow" padding={1} marginTop={1}>
       <Text color="yellow" bold>需要确认操作</Text>
       <Text color={Colors.AccentGreen}>
-        ✦ {pendingApproval.toolName}
+        {ICON} {pendingApproval.toolName}
       </Text>
 
       {

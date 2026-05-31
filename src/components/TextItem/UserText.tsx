@@ -7,7 +7,7 @@ export type UserTextProps = {
 }
 
 const UserText: React.FC<UserTextProps> = ({ text }) => {
-  const prefix = '> ';
+  const prefix = '❯ ';
   const prefixWidth = prefix.length;
 
   return (

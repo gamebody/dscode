@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import { Colors } from "../../utils/colors";
+import { ICON } from "../../utils/icons";
 import Gradient from "ink-gradient";
 import { MaxSizedBox } from "../MaxSizedBox";
 
@@ -25,7 +26,7 @@ const ThinkingBlock: React.FC<{
       maxHeight={maxHeight + 3}
     >
       <Box>
-        <Text color={Colors.AccentGreen}>✦ thinking</Text>
+        <Text color={Colors.AccentGreen}>{ICON} thinking</Text>
         <Gradient name="rainbow">
           <Text></Text>
         </Gradient>
@@ -38,7 +39,7 @@ const ThinkingBlock: React.FC<{
         >
           {lines.map((line, i) => (
             <Box key={i}>
-              <Text wrap="wrap" color={isStreaming ? Colors.Foreground : Colors.Comment}>
+              <Text wrap="wrap" color={Colors.Foreground}>
                 {line}
               </Text>
             </Box>
