@@ -88,7 +88,7 @@ export const renderTool = (tool: Tool["content"]): ReactElement => {
       return (
         <Box marginY={1} flexDirection="column">
           <Box>
-            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
+            <Text color={Colors.AccentGreen}>{ICON} {tool.name}</Text>
           </Box>
           <TodoList todos={returnDisplay.todos} />
         </Box>
@@ -99,7 +99,7 @@ export const renderTool = (tool: Tool["content"]): ReactElement => {
       return (
         <Box marginY={1} flexDirection="column">
           <Box>
-            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
+            <Text color={Colors.AccentGreen}>{ICON} {tool.name}</Text>
           </Box>
           <TodoList todos={returnDisplay.newTodos} />
         </Box>
@@ -120,7 +120,7 @@ export const renderTool = (tool: Tool["content"]): ReactElement => {
       return (
         <Box marginY={1} flexDirection="column">
           <Box>
-            <Text color={Colors.AccentGreen}>✦ {tool.name}</Text>
+            <Text color={Colors.AccentGreen}>{ICON} {tool.name}</Text>
             <Text color={Colors.Gray}>({filePath})</Text>
           </Box>
           <Box marginLeft={3}>

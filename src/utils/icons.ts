@@ -2,6 +2,6 @@
 
 
 
-export const ICON = '✧';
+export const ICON = '✦';
 
 
