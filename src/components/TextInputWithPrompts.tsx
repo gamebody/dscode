@@ -258,6 +258,7 @@ const TextInputWithPrompts: React.FC<TextInputWithPromptsProps> = () => {
               showCursor={true}
               onSubmit={async submitText => {
                 if (visible) return
+                if (submitText.trim().length === 0) return
                 setVisible(false)
 
                 if (!firstMessageRecorded.current) {
